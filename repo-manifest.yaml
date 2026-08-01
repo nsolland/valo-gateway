@@ -1,38 +1,14 @@
-# repo-manifest.yaml — Phase 1 baseline manifest
-# Oppretta: 2026-07-29T21:47:00Z
-# Prosjekt: VALO idebank-adopsjon
-
 repo:
   name: runtime-adapter-gateway
-  organisation: nsolland
-  description: "VALO idebank-adopsjon: Runtime Adapter Gateway — adaptiv gateway for køyretidsintegrering"
-  phase: 1
-  status: baseline
+  status: deprecated
+  canonical_owner: nsolland/valo-platform
 
 metadata:
-  created: 2026-07-29T21:47:00Z
   source: idebank-adopsjon
-  lifecycle: baseline-audit
+  lifecycle: deprecated-scaffold
+  deprecated: 2026-08-01
+  reason: capability consolidated into existing platform adapter layer
 
 governance:
-  policy_zone: valo
-  compliance_framework: reht
-  audit_trail: docs/PHASE1_REPORT.md
-
-structure:
-  directories:
-    - docs/
-    - src/
-    - tests/
-    - scripts/
-    - config/
-  state: scaffolding
-
-health_score:
-  overall: 1.0
-  categories:
-    code_presence: 0.0
-    documentation: 1.0
-    testing: 0.0
-    governance: 1.0
-    ci_cd: 0.0
+  do_not_build: true
+  canonical_map: nsolland/idebank/ideer/CAPABILITY_MAP.md
