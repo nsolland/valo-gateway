@@ -1,14 +1,9 @@
-repo:
-  name: runtime-adapter-gateway
-  status: deprecated
-  canonical_owner: nsolland/valo-platform
-
-metadata:
-  source: idebank-adopsjon
-  lifecycle: deprecated-scaffold
-  deprecated: 2026-08-01
-  reason: capability consolidated into existing platform adapter layer
-
-governance:
-  do_not_build: true
-  canonical_map: nsolland/idebank/ideer/CAPABILITY_MAP.md
+schema: valo.repo-manifest.v1
+canonical_name: valo-gateway
+current_repository: nsolland/runtime-adapter-gateway
+target_repository: nsolland/valo-gateway
+status: consolidation-staging
+la_identity: null
+authority_boundary: REHT
+responsibility: vendor-neutral mechanical execution enforcement SDK
+branch: feat/bootstrap-gateway-v1
