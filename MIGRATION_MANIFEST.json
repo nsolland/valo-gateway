@@ -1,0 +1,15 @@
+{
+  "schema": "valo.gateway.migration.v1",
+  "generated_at": "2026-08-05T10:05:45Z",
+  "target_repository": "nsolland/valo-gateway",
+  "staging_repository": "nsolland/runtime-adapter-gateway",
+  "target_branch": "feat/bootstrap-gateway-v1",
+  "sources": [
+    {"repository":"nsolland/valo-runtime-core","ref":"main","tree_sha":"242fdd00555ee7308314872bf6f3672c0026ca02","files":{"core/interfaces.py":"417e4396de83a44afb06000ab3c884557ddf0a3b"}},
+    {"repository":"nsolland/valo-runtime-local","ref":"main","tree_sha":"b7a7ad0839ea5d1a7e08e47615548f5b8907ee2a","files":{"local_runtime.py":"68fe2b92ed7efca8909981dde302e5c53d684bbd"}},
+    {"repository":"nsolland/valo-runtime-adapters","ref":"main","tree_sha":"19b63287c6d862b61a919ba34c223e70eab65a70","files":{"runtime_adapters.py":"eec9a93d821fd321a33681b12dc8d815d2eca61c"}},
+    {"repository":"nsolland/valo-tool-adapters","ref":"main","tree_sha":"d5c2c059af9beb204cd1a432412d59552006fe1c","files":{"tools/adapters.py":"99a7e02d23c322b90784a50a6cc1ac6b5c1754e4"}},
+    {"repository":"nsolland/valo-platform","ref":"main","files":{"src/valo_platform/authority_envelope.py":"9afadc6f4ceaf867215cdd872f184e11c2c2dda3","src/valo_platform/runtime_control_plane.py":"673b7eddf8ff002f7f6033195fe8f79961eb0157","src/valo_platform/governed_tool_gateway.py":"e4650c804c3bba180906449a58384dcc8b522ff6","tests/test_governed_tool_gateway.py":"bcda12ac06cde8634e94efe0bf85ced9afc5e33f"}}
+  ],
+  "migration_policy": {"la_identity":false,"fail_closed":true,"authority":"REHT only"}
+}

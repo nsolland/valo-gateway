@@ -1,0 +1,101 @@
+from __future__ import annotations
+from datetime import datetime
+from typing import Any, Protocol
+from pydantic import BaseModel, ConfigDict
+from valo_gateway.contracts import (
+    ActionEnvelope, AuthorityEnvelope, Clearance, ExecutionPermit,
+    ExecutionReceipt, ExecutionStatus, canonical_digest,
+)
+from valo_gateway.contracts.models import utcnow
+from .control import RuntimeControlPlane
+
+
+class ExecutableTool(Protocol):
+    def invoke(self, arguments: dict[str, Any]) -> Any: ...
+
+
+class ToolExecutionResult(BaseModel):
+    consumed_permit: ExecutionPermit
+    receipt: ExecutionReceipt
+    response: Any | None = None
+    error: str | None = None
+    model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+
+class ValoGateway:
+    def __init__(self, control_plane: RuntimeControlPlane | None = None) -> None:
+        self._control_plane = control_plane
+
+    def execute(self, *, authority: AuthorityEnvelope, clearance: Clearance,
+                permit: ExecutionPermit, action: ActionEnvelope,
+                executor_id: str, tool: ExecutableTool,
+                arguments: dict[str, Any] | None = None,
+                now: datetime | None = None,
+                previous_receipt_hash: str | None = None,
+                control_plane: RuntimeControlPlane | None = None,
+                control_scopes: list[str] | None = None) -> ToolExecutionResult:
+        now = now or utcnow()
+        self._validate_binding(authority, clearance, permit, action, now)
+        active = control_plane or self._control_plane
+        if active:
+            active.assert_execution_allowed(
+                authority_envelope_id=authority.envelope_id,
+                principal_id=authority.principal_id,
+                actor_id=authority.actor_id,
+                scopes=control_scopes if control_scopes is not None else authority.resource_scope,
+            )
+        consumed = permit.consume(now)
+        try:
+            response = tool.invoke(arguments or {})
+            receipt = ExecutionReceipt(
+                permit_id=consumed.permit_id,
+                clearance_id=clearance.clearance_id,
+                action_digest=action.digest,
+                executor_id=executor_id,
+                started_at=now,
+                completed_at=utcnow(),
+                status=ExecutionStatus.SUCCEEDED,
+                response_digest=canonical_digest(response),
+                previous_receipt_hash=previous_receipt_hash,
+            )
+            return ToolExecutionResult(consumed_permit=consumed, receipt=receipt, response=response)
+        except Exception as exc:
+            receipt = ExecutionReceipt(
+                permit_id=consumed.permit_id,
+                clearance_id=clearance.clearance_id,
+                action_digest=action.digest,
+                executor_id=executor_id,
+                started_at=now,
+                completed_at=utcnow(),
+                status=ExecutionStatus.FAILED,
+                response_digest=canonical_digest({"error_type": type(exc).__name__, "error": str(exc)}),
+                previous_receipt_hash=previous_receipt_hash,
+            )
+            return ToolExecutionResult(
+                consumed_permit=consumed,
+                receipt=receipt,
+                error=f"{type(exc).__name__}: {exc}",
+            )
+
+    @staticmethod
+    def _validate_binding(authority: AuthorityEnvelope, clearance: Clearance,
+                          permit: ExecutionPermit, action: ActionEnvelope,
+                          now: datetime) -> None:
+        if not authority.is_active(now):
+            raise ValueError("authority envelope is inactive or revoked at execution time")
+        if not clearance.authorizes_permit(now):
+            raise ValueError("clearance is no longer valid at execution time")
+        if not permit.is_usable(now):
+            raise ValueError("execution permit is expired, not yet active, or already consumed")
+        if action.authority_envelope_id != authority.envelope_id:
+            raise ValueError("action authority binding mismatch")
+        if clearance.authority_envelope_id != authority.envelope_id:
+            raise ValueError("clearance authority binding mismatch")
+        if permit.authority_envelope_id != authority.envelope_id:
+            raise ValueError("permit authority binding mismatch")
+        if clearance.action_digest != action.digest:
+            raise ValueError("clearance action binding mismatch")
+        if permit.action_digest != action.digest:
+            raise ValueError("permit action binding mismatch")
+        if permit.clearance_id != clearance.clearance_id:
+            raise ValueError("permit clearance binding mismatch")

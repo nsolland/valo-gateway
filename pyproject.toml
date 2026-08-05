@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "valo-gateway"
+version = "0.1.0"
+description = "Vendor-neutral execution infrastructure and mechanical enforcement SDK for VALO"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.6,<3"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/valo_gateway"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests", "conformance"]
+addopts = "-q"
