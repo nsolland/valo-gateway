@@ -133,3 +133,47 @@ def test_cli_validate_and_compile(capsys: pytest.CaptureFixture[str]) -> None:
     assert compile_output["runtime_id"] == "openai-agents"
     assert compile_output["contains_secrets"] is False
     assert compile_output["tools"]
+
+
+def test_child_profile_cannot_remove_budget_domain() -> None:
+    parent = load_profile(PROFILE_PATH)
+    child_raw = _profile_dict()
+    child_raw["profile_id"] = "child-operations-agent"
+    child_raw["parent_profile_id"] = parent.profile_id
+    child_raw["budgets"] = []
+
+    child = GovernedAgentProfile.model_validate(child_raw)
+
+    with pytest.raises(ValueError, match="removes budget domains"):
+        assert_child_profile_narrower(parent=parent, child=child)
+
+
+def test_child_always_approval_is_stricter_than_threshold() -> None:
+    parent = load_profile(PROFILE_PATH)
+    child_raw = _profile_dict()
+    child_raw["profile_id"] = "child-operations-agent"
+    child_raw["parent_profile_id"] = parent.profile_id
+    child_raw["approvals"][0].pop("threshold")
+    child_raw["approvals"][0].pop("currency")
+
+    child = GovernedAgentProfile.model_validate(child_raw)
+    assert_child_profile_narrower(parent=parent, child=child)
+
+
+def test_child_profile_cannot_introduce_identity_resource() -> None:
+    parent = load_profile(PROFILE_PATH)
+    child_raw = _profile_dict()
+    child_raw["profile_id"] = "child-operations-agent"
+    child_raw["parent_profile_id"] = parent.profile_id
+    child_raw["identity"]["resources"].append(
+        {
+            "resource_type": "database",
+            "resource_ref": "resource://database/finance",
+            "scope": ["table:ledger"],
+        }
+    )
+
+    child = GovernedAgentProfile.model_validate(child_raw)
+
+    with pytest.raises(ValueError, match="introduces resource"):
+        assert_child_profile_narrower(parent=parent, child=child)
