@@ -1,0 +1,149 @@
+{
+  "schema_id": "valo.gateway.governed-agent-profile.v1",
+  "profile_id": "reference-operations-agent",
+  "profile_version": 1,
+  "identity": {
+    "principal_id": "valo-research",
+    "actor_id": "reference-operations-agent",
+    "issuer": "valo-authority",
+    "legal_entity_ref": "urn:valo:principal:valo-research",
+    "resources": [
+      {
+        "resource_type": "email",
+        "resource_ref": "resource://communications/assigned-inbox",
+        "scope": [
+          "tenant:assigned"
+        ]
+      },
+      {
+        "resource_type": "payment_instrument",
+        "resource_ref": "resource://payments/assigned-card",
+        "scope": [
+          "account:assigned"
+        ]
+      }
+    ],
+    "legal_personhood_claimed": false
+  },
+  "authority_envelope_ref": "authority://reht/reference-operations-agent",
+  "policy_refs": [
+    "policy://valo/agent-operations",
+    "policy://valo/exposure-limits"
+  ],
+  "policy_combination": "all_must_allow",
+  "runtime_agnostic": true,
+  "authority_semantics": "reference_only",
+  "default_environment": "sandbox",
+  "tools": [
+    {
+      "name": "search.web",
+      "adapter": "mcp:search",
+      "action_types": [
+        "search.read"
+      ],
+      "resource_scope": [
+        "internet:public"
+      ],
+      "environments": [
+        "sandbox",
+        "live"
+      ],
+      "credential_handle_ref": "credential://vault/search-provider",
+      "requires_reht_clearance": true
+    },
+    {
+      "name": "communications.email.send",
+      "adapter": "mcp:email",
+      "action_types": [
+        "email.send"
+      ],
+      "resource_scope": [
+        "tenant:assigned"
+      ],
+      "environments": [
+        "sandbox",
+        "live"
+      ],
+      "credential_handle_ref": "credential://vault/assigned-inbox",
+      "requires_reht_clearance": true
+    },
+    {
+      "name": "payments.charge",
+      "adapter": "http:payments",
+      "action_types": [
+        "payment.charge"
+      ],
+      "resource_scope": [
+        "account:assigned"
+      ],
+      "environments": [
+        "sandbox",
+        "live"
+      ],
+      "credential_handle_ref": "credential://vault/assigned-payment-instrument",
+      "requires_reht_clearance": true
+    }
+  ],
+  "budgets": [
+    {
+      "budget_id": "combined-operational-exposure",
+      "currency": "USD",
+      "window": "month",
+      "hard_limit": "5000.00",
+      "soft_limit": "500.00",
+      "atomic_reservation": true,
+      "shared_with_children": true
+    }
+  ],
+  "approvals": [
+    {
+      "rule_id": "large-payment-step-up",
+      "action_types": [
+        "payment.charge"
+      ],
+      "threshold": "500.00",
+      "currency": "USD",
+      "approver_scope": [
+        "role:risk-owner"
+      ],
+      "freeze_action": true,
+      "execute_frozen_payload_only": true,
+      "reht_reclearance_required": true
+    },
+    {
+      "rule_id": "external-email-step-up",
+      "action_types": [
+        "email.send"
+      ],
+      "approver_scope": [
+        "role:communications-owner"
+      ],
+      "freeze_action": true,
+      "execute_frozen_payload_only": true,
+      "reht_reclearance_required": true
+    }
+  ],
+  "sessions": {
+    "default_ttl_seconds": 900,
+    "max_ttl_seconds": 3600,
+    "token_transport": "authorization_header",
+    "secret_in_url": false,
+    "policy_refresh": "every_call",
+    "tool_catalog_refresh": "every_call",
+    "zero_standing_access": true
+  },
+  "audit": {
+    "decision_ledger": "authoritative",
+    "execution_receipts": "veritas_required",
+    "activity_log": "non_authoritative",
+    "deny_without_decision_id": true
+  },
+  "revocation": {
+    "check_at_execution_boundary": true,
+    "cascade_to_children": true,
+    "revoke_sessions": true,
+    "revoke_reads": true,
+    "provider_cancellation_when_supported": true,
+    "external_side_effects_are_not_reversible": true
+  }
+}
