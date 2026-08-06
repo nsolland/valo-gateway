@@ -33,19 +33,34 @@ proposal -> VAIG evidence -> REHT clearance + execution permit
   chain; receipts are deterministic (`canonical_digest` over sorted JSON).
 - **Vendor neutrality**: one gateway core, many protocols/harnesses/runtimes/tool
   adapters; no vendor owns the execution boundary.
+- **Profiles reference authority; they never create it.** A governed agent
+  profile may reference an authority envelope and policies but cannot mint a
+  clearance, permit, approval attestation or credential.
+- **Compiled runtime bundles contain no secrets.** Tool and resource access is
+  represented by opaque handles only.
+- **Every governed tool still requires REHT clearance.** Listing, compiling or
+  injecting a tool into a harness is not authorization.
+- **Approval freezes the exact action.** Human approval is evidence consumed by
+  REHT; execution requires re-clearance and a new one-shot permit.
+- **Activity logs are not proof.** Authoritative REHT decisions and Veritas
+  execution receipts are required where the assurance profile demands them.
+- **Child profiles only narrow.** They cannot add tools, action types, resources,
+  environments, budget, session lifetime or weaker approval thresholds.
 
 ## Layout
 
 ```
 src/valo_gateway/
 ├── contracts/      # action, authority, clearance, permit, decision-contract, receipt
+├── agent_profile.py # runtime-agnostic identity/tool/budget/approval/session contract
+├── cli.py           # profile validation, compilation and narrowing checks
 ├── gateway/        # binding validation, permit consumption, HALT/revocation, fail-closed execution
 ├── harness/        # routing, runtime lifecycle, event stream, checkpoint contracts
 ├── protocols/      # MCP, A2A, HTTP, gRPC, ext_authz ingress normalization
 ├── runtime_adapters/  # local, OpenAI, Claude, Google runtime adapters
 ├── tool_adapters/  # FunctionTool + ToolRegistry (mechanical wrappers)
 ├── sdk/            # GatewaySDK composition API
-└── profiles/       # governed comms, agent tool use, edge/enterprise sidecar profiles
+└── profiles/       # governed comms, agent tool use, edge/enterprise/profile references
 conformance/        # vendor-neutral contract + non-bypass tests
 tests/              # unit tests
 ```
@@ -68,6 +83,10 @@ python -m venv .venv && .venv/bin/pip install -e ".[dev]"
 .venv/bin/python -m pytest --cov=valo_gateway   # coverage report
 .venv/bin/python -m compileall -q src tests conformance
 .venv/bin/python -m ruff check src tests conformance
+
+valo-gateway profile validate src/valo_gateway/profiles/governed_agent_profile.json
+valo-gateway profile compile src/valo_gateway/profiles/governed_agent_profile.json \
+  --runtime-id custom-loop --environment live
 ```
 
 CI (`.github/workflows/ci.yml`) runs compileall + pytest on every push/PR.
@@ -86,6 +105,11 @@ CI (`.github/workflows/ci.yml`) runs compileall + pytest on every push/PR.
 - The SDK composition path (ingress → harness → gateway → receipt) is covered.
 - Conformance tests prove non-bypass: plugins cannot create authority, and a
   permit is one-shot end-to-end.
+- A profile compiled for two runtimes has the same profile digest and tool set.
+- Live tool handles without explicit resource scope fail validation.
+- Raw credential material in a profile fails validation.
+- Delegated-session descriptors contain no secret and obey the profile TTL.
+- Child profiles are tested for both valid narrowing and blocked expansion.
 
 ## Branch discipline
 
