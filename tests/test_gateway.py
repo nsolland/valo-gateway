@@ -1,15 +1,23 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+
 import pytest
+
 from valo_gateway import (
-    ActionEnvelope, AuthorityEnvelope, AuthoritySource, Clearance, Decision,
-    DecisionContract, ValoGateway, issue_execution_permit,
+    ActionEnvelope,
+    AuthorityEnvelope,
+    AuthoritySource,
+    Clearance,
+    Decision,
+    DecisionContract,
+    ValoGateway,
+    issue_execution_permit,
 )
 from valo_gateway.gateway import ControlEvent, ControlEventType, RuntimeControlPlane
 from valo_gateway.tool_adapters import FunctionTool
 
 
 def fixture():
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     authority = AuthorityEnvelope(
         principal_id="human:owner", actor_id="agent:worker",
         source=AuthoritySource.INTERNAL, issuer="valo", issued_at=now,

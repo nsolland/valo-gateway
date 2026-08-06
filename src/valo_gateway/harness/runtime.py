@@ -1,8 +1,12 @@
 from __future__ import annotations
+
+import json
+import time
+import uuid
 from dataclasses import dataclass, field
 from hashlib import sha256
-import json, time, uuid
 from typing import Any, Protocol
+
 
 @dataclass(frozen=True)
 class Event:

@@ -20,3 +20,6 @@ packages = ["src/valo_gateway"]
 pythonpath = ["src"]
 testpaths = ["tests", "conformance"]
 addopts = "-q"
+
+[tool.ruff.lint]
+ignore = ["BLE001"]  # gateway catches all exceptions to emit failure receipts

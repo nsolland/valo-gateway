@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+
 from valo_gateway.gateway import RuntimeControlPlane, ValoGateway
 from valo_gateway.harness import HarnessRouter
 from valo_gateway.protocols import IngressNormalizer
 from valo_gateway.tool_adapters import ToolRegistry
+
 
 @dataclass
 class GatewaySDK:

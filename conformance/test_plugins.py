@@ -1,7 +1,20 @@
 import pytest
+
 from valo_gateway.harness import HarnessRouter
-from valo_gateway.protocols import A2AIngress, ExtAuthzIngress, GRPCIngress, HTTPIngress, MCPIngress
-from valo_gateway.runtime_adapters import ClaudeRuntime, GoogleRuntime, LocalRuntime, OpenAIRuntime
+from valo_gateway.protocols import (
+    A2AIngress,
+    ExtAuthzIngress,
+    GRPCIngress,
+    HTTPIngress,
+    MCPIngress,
+)
+from valo_gateway.runtime_adapters import (
+    ClaudeRuntime,
+    GoogleRuntime,
+    LocalRuntime,
+    OpenAIRuntime,
+)
+
 
 @pytest.mark.parametrize("adapter", [LocalRuntime(), OpenAIRuntime(), ClaudeRuntime(), GoogleRuntime()])
 def test_runtime_contract(adapter):

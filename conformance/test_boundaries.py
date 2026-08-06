@@ -1,5 +1,6 @@
 from pathlib import Path
 
+
 def test_no_la_identity_claim():
     assert "has no la identity" in Path("LAYER_IDENTITY.md").read_text().lower()
 

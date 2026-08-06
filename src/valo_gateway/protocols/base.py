@@ -1,6 +1,9 @@
 from __future__ import annotations
+
 from typing import Any, Protocol
+
 from valo_gateway.contracts import ActionEnvelope
+
 
 class IngressNormalizer(Protocol):
     protocol: str

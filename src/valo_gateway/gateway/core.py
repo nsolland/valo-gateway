@@ -1,12 +1,21 @@
 from __future__ import annotations
+
 from datetime import datetime
 from typing import Any, Protocol
+
 from pydantic import BaseModel, ConfigDict
+
 from valo_gateway.contracts import (
-    ActionEnvelope, AuthorityEnvelope, Clearance, ExecutionPermit,
-    ExecutionReceipt, ExecutionStatus, canonical_digest,
+    ActionEnvelope,
+    AuthorityEnvelope,
+    Clearance,
+    ExecutionPermit,
+    ExecutionReceipt,
+    ExecutionStatus,
+    canonical_digest,
 )
 from valo_gateway.contracts.models import utcnow
+
 from .control import RuntimeControlPlane
 
 
@@ -25,6 +34,7 @@ class ToolExecutionResult(BaseModel):
 class ValoGateway:
     def __init__(self, control_plane: RuntimeControlPlane | None = None) -> None:
         self._control_plane = control_plane
+        self._consumed_permits: set[str] = set()
 
     def execute(self, *, authority: AuthorityEnvelope, clearance: Clearance,
                 permit: ExecutionPermit, action: ActionEnvelope,
@@ -35,6 +45,8 @@ class ValoGateway:
                 control_plane: RuntimeControlPlane | None = None,
                 control_scopes: list[str] | None = None) -> ToolExecutionResult:
         now = now or utcnow()
+        if permit.permit_id in self._consumed_permits:
+            raise ValueError("execution permit is already consumed")
         self._validate_binding(authority, clearance, permit, action, now)
         active = control_plane or self._control_plane
         if active:
@@ -45,6 +57,7 @@ class ValoGateway:
                 scopes=control_scopes if control_scopes is not None else authority.resource_scope,
             )
         consumed = permit.consume(now)
+        self._consumed_permits.add(permit.permit_id)
         try:
             response = tool.invoke(arguments or {})
             receipt = ExecutionReceipt(

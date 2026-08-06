@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import json
+from datetime import UTC, datetime
 from enum import Enum
 from hashlib import sha256
-import json
 from typing import Any
 from uuid import uuid4
 
@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def canonical_digest(value: Any) -> str:
@@ -58,7 +58,7 @@ class AuthorityEnvelope(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     @model_validator(mode="after")
-    def validate_lifecycle(self) -> "AuthorityEnvelope":
+    def validate_lifecycle(self) -> AuthorityEnvelope:
         if self.valid_until <= self.issued_at:
             raise ValueError("valid_until must be later than issued_at")
         if self.revoked_at is not None and not self.revocation_ref:
@@ -125,7 +125,7 @@ class ExecutionPermit(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     @model_validator(mode="after")
-    def validate_lifecycle(self) -> "ExecutionPermit":
+    def validate_lifecycle(self) -> ExecutionPermit:
         if self.expires_at <= self.issued_at:
             raise ValueError("expires_at must be later than issued_at")
         return self
@@ -134,7 +134,7 @@ class ExecutionPermit(BaseModel):
         now = now or utcnow()
         return self.consumed_at is None and self.issued_at <= now < self.expires_at
 
-    def consume(self, now: datetime | None = None) -> "ExecutionPermit":
+    def consume(self, now: datetime | None = None) -> ExecutionPermit:
         now = now or utcnow()
         if not self.is_usable(now):
             raise ValueError("execution permit is expired, not yet active, or already consumed")
