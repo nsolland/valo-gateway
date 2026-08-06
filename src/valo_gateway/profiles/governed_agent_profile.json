@@ -30,6 +30,7 @@
     "policy://valo/agent-operations",
     "policy://valo/exposure-limits"
   ],
+  "policy_combination": "all_must_allow",
   "runtime_agnostic": true,
   "authority_semantics": "reference_only",
   "default_environment": "sandbox",
@@ -144,9 +145,5 @@
     "revoke_reads": true,
     "provider_cancellation_when_supported": true,
     "external_side_effects_are_not_reversible": true
-  },
-  "metadata": {
-    "source_pattern": "Naive governed agent profile",
-    "canonical_mapping": "VAIG evaluates; REHT clears; gateway enforces; Veritas proves"
   }
 }
