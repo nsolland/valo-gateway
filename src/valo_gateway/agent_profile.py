@@ -277,7 +277,7 @@ def build_session_descriptor(
     now: datetime | None = None,
 ) -> DelegatedSessionDescriptor:
     now = now or datetime.now(UTC)
-    ttl = ttl_seconds or compiled.default_session_ttl_seconds
+    ttl = compiled.default_session_ttl_seconds if ttl_seconds is None else ttl_seconds
     if ttl <= 0 or ttl > compiled.max_session_ttl_seconds:
         raise ValueError("session TTL exceeds the compiled profile maximum")
     return DelegatedSessionDescriptor(
