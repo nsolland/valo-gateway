@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
 from pathlib import Path
-from typing import Any, Literal
+from typing import Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -169,6 +169,7 @@ class GovernedAgentProfile(BaseModel):
     identity: AgentIdentity
     authority_envelope_ref: str
     policy_refs: tuple[str, ...]
+    policy_combination: Literal["all_must_allow"] = "all_must_allow"
     parent_profile_id: str | None = None
     runtime_agnostic: Literal[True] = True
     authority_semantics: Literal["reference_only"] = "reference_only"
@@ -179,7 +180,6 @@ class GovernedAgentProfile(BaseModel):
     sessions: SessionPolicy = Field(default_factory=SessionPolicy)
     audit: AuditPolicy = Field(default_factory=AuditPolicy)
     revocation: RevocationPolicy = Field(default_factory=RevocationPolicy)
-    metadata: dict[str, Any] = Field(default_factory=dict)
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     @model_validator(mode="after")
@@ -202,10 +202,6 @@ class GovernedAgentProfile(BaseModel):
         rule_ids = [rule.rule_id for rule in self.approvals]
         if len(rule_ids) != len(set(rule_ids)):
             raise ValueError("approval rule ids must be unique")
-        secret_terms = ("secret", "password", "token", "api_key", "private_key")
-        for key in self.metadata:
-            if any(term in key.lower() for term in secret_terms):
-                raise ValueError("metadata cannot contain secret-bearing fields")
         return self
 
     @property
@@ -301,6 +297,32 @@ def assert_child_profile_narrower(
 ) -> None:
     if child.parent_profile_id != parent.profile_id:
         raise ValueError("child parent_profile_id does not bind to parent")
+    if child.identity.principal_id != parent.identity.principal_id:
+        raise ValueError("child changes principal")
+    if child.identity.issuer != parent.identity.issuer:
+        raise ValueError("child changes identity issuer")
+    if child.identity.legal_entity_ref != parent.identity.legal_entity_ref:
+        raise ValueError("child changes legal entity binding")
+    if not set(parent.policy_refs).issubset(child.policy_refs):
+        raise ValueError("child removes inherited policy")
+    if (
+        parent.default_environment is ExecutionEnvironment.SANDBOX
+        and child.default_environment is ExecutionEnvironment.LIVE
+    ):
+        raise ValueError("child promotes default environment to live")
+
+    parent_resources = {
+        (resource.resource_type, resource.resource_ref): resource
+        for resource in parent.identity.resources
+    }
+    for child_resource in child.identity.resources:
+        parent_resource = parent_resources.get(
+            (child_resource.resource_type, child_resource.resource_ref)
+        )
+        if parent_resource is None:
+            raise ValueError(f"child introduces resource {child_resource.resource_ref}")
+        if not set(child_resource.scope).issubset(parent_resource.scope):
+            raise ValueError(f"child expands resource scope for {child_resource.resource_ref}")
 
     parent_tools = {tool.name: tool for tool in parent.tools}
     for child_tool in child.tools:
@@ -319,6 +341,10 @@ def assert_child_profile_narrower(
             raise ValueError(f"child expands environments for {child_tool.name}")
 
     parent_budgets = {budget.budget_id: budget for budget in parent.budgets}
+    child_budget_ids = {budget.budget_id for budget in child.budgets}
+    missing_budgets = set(parent_budgets) - child_budget_ids
+    if missing_budgets:
+        raise ValueError(f"child removes budget domains: {sorted(missing_budgets)}")
     for child_budget in child.budgets:
         parent_budget = parent_budgets.get(child_budget.budget_id)
         if parent_budget is None:
@@ -356,9 +382,11 @@ def assert_child_profile_narrower(
                 if all(rule.threshold is not None for rule in candidates):
                     raise ValueError(f"child weakens always-approval rule for {action_type}")
             elif all(
-                rule.threshold is None
-                or rule.currency != parent_rule.currency
-                or rule.threshold > parent_rule.threshold
+                rule.threshold is not None
+                and (
+                    rule.currency != parent_rule.currency
+                    or rule.threshold > parent_rule.threshold
+                )
                 for rule in candidates
             ):
                 raise ValueError(f"child raises approval threshold for {action_type}")
