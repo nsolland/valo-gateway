@@ -5,6 +5,7 @@ These tests prove the mechanical boundary cannot be bypassed:
 2. HALT/revocation blocks before permit consumption.
 3. Runtime/tool plugins cannot mint authority or upgrade a decision.
 4. DENY/DEFER/HALT decisions never issue a permit.
+5. Agent Skills describe capability/context but never substitute for authority.
 """
 from __future__ import annotations
 
@@ -14,6 +15,7 @@ import pytest
 
 from tests.conftest import make_chain
 from valo_gateway import (
+    AgentSkillContext,
     Decision,
     ValoGateway,
     issue_execution_permit,
@@ -103,3 +105,34 @@ def test_permit_cannot_outlive_clearance_or_authority():
             clearance=clearance, authority=authority, action=action,
             expires_at=now + timedelta(minutes=30), now=now,
         )
+
+
+def test_agent_skill_capabilities_never_override_revoked_authority():
+    now, authority, action, clearance, _ = make_chain()
+    skill = AgentSkillContext(
+        skill_id="example/payment-skill",
+        skill_version="1.0.0",
+        skill_source="https://example.invalid/skills/payment",
+        skill_hash="sha256:" + "b" * 64,
+        skill_provenance={"format": "agent-skills"},
+        skill_requested_capabilities=["payment.submit"],
+    )
+    action = action.model_copy(update={"skill_context": skill})
+    clearance = clearance.model_copy(update={
+        "action_digest": action.digest,
+        "skill_binding_digest": skill.binding_digest,
+    })
+    permit = issue_execution_permit(
+        clearance=clearance, authority=authority, action=action,
+        expires_at=now + timedelta(minutes=1), now=now,
+    )
+    revoked = authority.model_copy(update={"revoked_at": now, "revocation_ref": "rev:1"})
+    calls = []
+
+    with pytest.raises(ValueError, match="inactive or revoked"):
+        ValoGateway().execute(
+            authority=revoked, clearance=clearance, permit=permit, action=action,
+            executor_id="t", tool=FunctionTool("x", lambda: calls.append(1)), now=now,
+        )
+    assert calls == []
+    assert permit.consumed_at is None

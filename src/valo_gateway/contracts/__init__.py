@@ -1,5 +1,6 @@
 from .models import (
     ActionEnvelope,
+    AgentSkillContext,
     AuthorityEnvelope,
     AuthoritySource,
     Clearance,
@@ -13,7 +14,7 @@ from .models import (
 )
 
 __all__ = [
-    "ActionEnvelope", "AuthorityEnvelope", "AuthoritySource", "Clearance",
+    "ActionEnvelope", "AgentSkillContext", "AuthorityEnvelope", "AuthoritySource", "Clearance",
     "Decision", "DecisionContract", "ExecutionPermit", "ExecutionReceipt",
     "ExecutionStatus", "canonical_digest", "issue_execution_permit",
 ]
