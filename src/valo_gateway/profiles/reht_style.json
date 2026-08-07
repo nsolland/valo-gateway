@@ -1,14 +1,31 @@
 {
   "id": "reht-visual",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "language": "nb-NO",
   "purpose": "Kanonisk stilprofil for reht-bilder og visuell kommunikasjon.",
   "naming_rule": "reht skrives alltid med små bokstaver, også i overskrifter, løpende tekst og grafikk.",
+  "campaign_model": {
+    "sequence": [
+      "premiss",
+      "vurdering",
+      "handling"
+    ],
+    "rule": "Start med en universell menneskelig erfaring. Skap et mentalt stopp med ett spørsmål. La mottakeren trekke konklusjonen selv. reht kommer til slutt som beslutningspunktet, ikke som teknisk forklaring.",
+    "hero": "Menneskelig dømmekraft er helten. reht gjør dømmekraft mulig når autonome systemer skal handle.",
+    "default_structure": [
+      "Én kort premiss-setning.",
+      "Ett spørsmål som utløser vurdering.",
+      "reht. Right Before Action."
+    ]
+  },
   "principles": [
     "Vis, ikke selg.",
     "Informasjon først, effekt sist.",
     "En idé per bilde.",
     "Konsekvens før teknologi.",
+    "Start med noe mennesker allerede kjenner igjen før teknologien introduseres.",
+    "La mottakeren fullføre tanken selv.",
+    "reht er beslutningspunktet, ikke helten.",
     "Dokumentarisk og troverdig fremfor futuristisk.",
     "Uttrykket skal kunne stå i en seriøs avis, industrikampanje eller offentlig sikkerhetskampanje."
   ],
@@ -18,6 +35,8 @@
     "Få farger og tydelig typografi.",
     "Konkrete mennesker, steder, maskiner eller situasjoner når motivet tillater det.",
     "Norsk språk når målgruppen er norsk.",
+    "Kampanjemateriell følger premiss → vurdering → handling.",
+    "Maks én hovedidé og én visuell metafor per kampanjeenhet.",
     "reht omtales som autorisasjon før handling, handlingskontroll eller klarsignal før handling når teknisk navn ikke er nødvendig.",
     "Navnet reht skal aldri skrives som REHT, Reht eller annen variant."
   ],
@@ -29,21 +48,46 @@
     "Dramatisk rød-grønn alarmgrafikk uten konkret informasjonsverdi.",
     "Cinematic som stilinstruks uten eksplisitt bestilling.",
     "Clickbait-komposisjon, overdreven dramatikk eller kunstig frykt.",
+    "Dashboards, kode eller arkitekturdiagrammer i kampanjemateriell med mindre selve poenget krever det.",
+    "Teknisk forklaring før mottakeren har forstått den menneskelige situasjonen.",
     "Engelske fagord når et presist norsk ord finnes.",
     "Skrivemåtene REHT og Reht."
   ],
   "editorial_test": "Hvis bildet kunne vært brukt uendret av et generisk KI-selskap, er det feil.",
+  "campaign_test": "Hvis mottakeren må forstå teknologien før poenget virker, er kampanjen feil.",
   "reference_world": [
-    "Nøkterne Volvo-, Saab- og Bosch-sikkerhetskampanjer.",
-    "Offentlige trafikksikkerhetskampanjer.",
+    "Nøkterne Volvo-, Saab-, Bosch- og klassiske ABS-sikkerhetskampanjer.",
+    "THINK! og andre offentlige trafikksikkerhetskampanjer.",
+    "The Economist-lignende overskriftsdrevet enkelhet.",
+    "Objekttransformasjon: én kjent gjenstand blir en umiddelbart forståelig metafor.",
+    "Før-og-etter: én detalj endrer hele utfallet.",
+    "Konsekvensvisualisering: vis utfallet fremfor å forklare risikoen.",
     "Dokumentarisk pressefoto.",
     "Saklig industrikommunikasjon fra før den generiske KI-estetikken."
   ],
-  "default_prompt_prefix": "Følg reht-profilen: nøkternt, dokumentarisk og redaksjonelt. reht skrives alltid med små bokstaver. Ingen generisk KI-estetikk, ingen futurisme, ingen neon, ingen glødende skjold, ingen humanoid robot som standardmotiv. Vis én konkret situasjon og én konsekvens. Informasjon først, effekt sist. Norsk tekst der det er naturlig.",
+  "default_prompt_prefix": "Følg reht-profilen. Kampanjen skal bygges som premiss → vurdering → handling. Start med en universell menneskelig erfaring, skap ett mentalt stopp, og la reht komme til slutt som beslutningspunkt. Én idé, én visuell metafor, svært lite tekst. Nøkternt, dokumentarisk og redaksjonelt. reht skrives alltid med små bokstaver. Ingen generisk KI-estetikk, futurisme, neon, glødende skjold, humanoid robot som standardmotiv, dashboard eller unødvendig teknisk forklaring. Informasjon først, effekt sist.",
   "slogans": [
     "Stopp. Vurder. Klarer. Handle.",
     "Ingen klarsignal. Ingen handling.",
     "Stopp feil før de blir handling.",
-    "Vurder før agenten handler."
+    "Vurder før agenten handler.",
+    "Should this happen?"
+  ],
+  "examples": [
+    {
+      "premise": "Would you give your teenager your card and PIN?",
+      "assessment": "Would you?",
+      "action": "reht. Right Before Action."
+    },
+    {
+      "premise": "The AI says it's done.",
+      "assessment": "Do you believe it?",
+      "action": "reht. Right Before Action."
+    },
+    {
+      "premise": "Everyone approved it.",
+      "assessment": "Should you?",
+      "action": "reht. Right Before Action."
+    }
   ]
 }
