@@ -4,6 +4,7 @@ Status: active implementation
 Owner/claim: ChatGPT (this delivery)
 Canonical base: `2db0d79edb348a4fbf08f619a290e7e13df93f29`
 Branch: `feat/agent-skills-binding`
+Draft PR: `#6`
 
 ## Source
 
@@ -32,7 +33,7 @@ When an action is skill-backed, the execution context carries:
 - `skill_provenance`
 - `skill_requested_capabilities`
 
-The canonical digest of that immutable context is `skill_binding_digest`.
+`skill_hash` and the canonical digest of the immutable context, `skill_binding_digest`, use the RACS form `sha256:<64 lowercase hex>`.
 
 Propagation:
 
@@ -47,7 +48,9 @@ The gateway fails closed if the action, clearance and permit skill bindings diff
 - `src/valo_gateway/contracts/__init__.py`
 - `src/valo_gateway/gateway/core.py`
 - `tests/test_gateway_core.py`
+- `conformance/test_non_bypass.py`
 - `AGENTS.md`
+- `pyproject.toml` (only narrowly-scoped pre-existing Ruff exceptions required by the active CI gate)
 
 ## Dependencies
 
