@@ -70,6 +70,20 @@ class AuthorityEnvelope(BaseModel):
         return self.revoked_at is None and self.issued_at <= now < self.valid_until
 
 
+class AgentSkillContext(BaseModel):
+    skill_id: str
+    skill_version: str
+    skill_source: str
+    skill_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    skill_provenance: dict[str, str] = Field(default_factory=dict)
+    skill_requested_capabilities: list[str] = Field(default_factory=list)
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    @property
+    def binding_digest(self) -> str:
+        return canonical_digest(self.model_dump(mode="json"))
+
+
 class ActionEnvelope(BaseModel):
     action_type: str
     target: str
@@ -77,12 +91,20 @@ class ActionEnvelope(BaseModel):
     context_digest: str
     policy_digest: str
     authority_envelope_id: str
+    skill_context: AgentSkillContext | None = None
     nonce: str = Field(default_factory=lambda: str(uuid4()))
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     @property
     def digest(self) -> str:
-        return canonical_digest(self.model_dump(mode="json"))
+        payload = self.model_dump(mode="json")
+        if payload["skill_context"] is None:
+            payload.pop("skill_context")
+        return canonical_digest(payload)
+
+    @property
+    def skill_binding_digest(self) -> str | None:
+        return self.skill_context.binding_digest if self.skill_context is not None else None
 
 
 class DecisionContract(BaseModel):
@@ -103,6 +125,7 @@ class Clearance(BaseModel):
     decided_at: datetime = Field(default_factory=utcnow)
     valid_until: datetime
     reht_ref: str
+    skill_binding_digest: str | None = None
     evidence_refs: list[str] = Field(default_factory=list)
     policy_refs: list[str] = Field(default_factory=list)
     receipt_chain_hash: str | None = None
@@ -118,6 +141,7 @@ class ExecutionPermit(BaseModel):
     clearance_id: str
     action_digest: str
     authority_envelope_id: str
+    skill_binding_digest: str | None = None
     issued_at: datetime = Field(default_factory=utcnow)
     expires_at: datetime
     consumed_at: datetime | None = None
@@ -159,11 +183,15 @@ class ExecutionReceipt(BaseModel):
     status: ExecutionStatus
     response_digest: str | None = None
     previous_receipt_hash: str | None = None
+    skill_binding_digest: str | None = None
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     @property
     def receipt_hash(self) -> str:
-        return canonical_digest(self.model_dump(mode="json"))
+        payload = self.model_dump(mode="json")
+        if payload["skill_binding_digest"] is None:
+            payload.pop("skill_binding_digest")
+        return canonical_digest(payload)
 
 
 def issue_execution_permit(*, clearance: Clearance, authority: AuthorityEnvelope,
@@ -178,6 +206,8 @@ def issue_execution_permit(*, clearance: Clearance, authority: AuthorityEnvelope
         raise ValueError("action authority binding mismatch")
     if clearance.action_digest != action.digest:
         raise ValueError("clearance action binding mismatch")
+    if clearance.skill_binding_digest != action.skill_binding_digest:
+        raise ValueError("clearance skill binding mismatch")
     contract = clearance.decision_contract
     if contract.principal_id != authority.principal_id or contract.actor_id != authority.actor_id:
         raise ValueError("decision contract identity binding mismatch")
@@ -191,6 +221,7 @@ def issue_execution_permit(*, clearance: Clearance, authority: AuthorityEnvelope
         clearance_id=clearance.clearance_id,
         action_digest=action.digest,
         authority_envelope_id=authority.envelope_id,
+        skill_binding_digest=action.skill_binding_digest,
         issued_at=now,
         expires_at=expires_at,
     )
