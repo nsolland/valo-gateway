@@ -1,8 +1,9 @@
 {
   "id": "reht-visual",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "language": "nb-NO",
-  "purpose": "Kanonisk stilprofil for REHT-bilder og visuell kommunikasjon.",
+  "purpose": "Kanonisk stilprofil for reht-bilder og visuell kommunikasjon.",
+  "naming_rule": "reht skrives alltid med små bokstaver, også i overskrifter, løpende tekst og grafikk.",
   "principles": [
     "Vis, ikke selg.",
     "Informasjon først, effekt sist.",
@@ -17,7 +18,8 @@
     "Få farger og tydelig typografi.",
     "Konkrete mennesker, steder, maskiner eller situasjoner når motivet tillater det.",
     "Norsk språk når målgruppen er norsk.",
-    "REHT omtales som autorisasjon før handling, handlingskontroll eller klarsignal før handling når teknisk navn ikke er nødvendig."
+    "reht omtales som autorisasjon før handling, handlingskontroll eller klarsignal før handling når teknisk navn ikke er nødvendig.",
+    "Navnet reht skal aldri skrives som REHT, Reht eller annen variant."
   ],
   "forbidden": [
     "Generisk KI-reklameestetikk.",
@@ -27,7 +29,8 @@
     "Dramatisk rød-grønn alarmgrafikk uten konkret informasjonsverdi.",
     "Cinematic som stilinstruks uten eksplisitt bestilling.",
     "Clickbait-komposisjon, overdreven dramatikk eller kunstig frykt.",
-    "Engelske fagord når et presist norsk ord finnes."
+    "Engelske fagord når et presist norsk ord finnes.",
+    "Skrivemåtene REHT og Reht."
   ],
   "editorial_test": "Hvis bildet kunne vært brukt uendret av et generisk KI-selskap, er det feil.",
   "reference_world": [
@@ -36,7 +39,7 @@
     "Dokumentarisk pressefoto.",
     "Saklig industrikommunikasjon fra før den generiske KI-estetikken."
   ],
-  "default_prompt_prefix": "Følg REHT-profilen: nøkternt, dokumentarisk og redaksjonelt. Ingen generisk KI-estetikk, ingen futurisme, ingen neon, ingen glødende skjold, ingen humanoid robot som standardmotiv. Vis én konkret situasjon og én konsekvens. Informasjon først, effekt sist. Norsk tekst der det er naturlig.",
+  "default_prompt_prefix": "Følg reht-profilen: nøkternt, dokumentarisk og redaksjonelt. reht skrives alltid med små bokstaver. Ingen generisk KI-estetikk, ingen futurisme, ingen neon, ingen glødende skjold, ingen humanoid robot som standardmotiv. Vis én konkret situasjon og én konsekvens. Informasjon først, effekt sist. Norsk tekst der det er naturlig.",
   "slogans": [
     "Stopp. Vurder. Klarer. Handle.",
     "Ingen klarsignal. Ingen handling.",
