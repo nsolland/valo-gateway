@@ -70,6 +70,7 @@ class ValoGateway:
                 status=ExecutionStatus.SUCCEEDED,
                 response_digest=canonical_digest(response),
                 previous_receipt_hash=previous_receipt_hash,
+                skill_binding_digest=consumed.skill_binding_digest,
             )
             return ToolExecutionResult(consumed_permit=consumed, receipt=receipt, response=response)
         except Exception as exc:
@@ -83,6 +84,7 @@ class ValoGateway:
                 status=ExecutionStatus.FAILED,
                 response_digest=canonical_digest({"error_type": type(exc).__name__, "error": str(exc)}),
                 previous_receipt_hash=previous_receipt_hash,
+                skill_binding_digest=consumed.skill_binding_digest,
             )
             return ToolExecutionResult(
                 consumed_permit=consumed,
@@ -112,3 +114,7 @@ class ValoGateway:
             raise ValueError("permit action binding mismatch")
         if permit.clearance_id != clearance.clearance_id:
             raise ValueError("permit clearance binding mismatch")
+        if clearance.skill_binding_digest != action.skill_binding_digest:
+            raise ValueError("clearance skill binding mismatch")
+        if permit.skill_binding_digest != action.skill_binding_digest:
+            raise ValueError("permit skill binding mismatch")
