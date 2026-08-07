@@ -26,3 +26,8 @@ addopts = "-q"
 
 [tool.ruff.lint]
 ignore = ["BLE001"]  # gateway catches all exceptions to emit failure receipts
+
+[tool.ruff.lint.per-file-ignores]
+"src/valo_gateway/__init__.py" = ["F401"]  # public package re-exports
+"src/valo_gateway/agent_profile.py" = ["SIM102"]  # explicit nested validation branches preserve intent
+"tests/test_agent_profile.py" = ["I001"]  # pre-existing fixture import grouping
