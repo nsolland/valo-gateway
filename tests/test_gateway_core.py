@@ -175,6 +175,7 @@ def test_agent_skill_binding_propagates_to_permit_and_receipt():
         executor_id="tool:registry", tool=FunctionTool("x", lambda: "ok"), now=now,
     )
 
+    assert skill.binding_digest.startswith("sha256:")
     assert action.skill_binding_digest == skill.binding_digest
     assert clearance.skill_binding_digest == skill.binding_digest
     assert permit.skill_binding_digest == skill.binding_digest
@@ -199,7 +200,7 @@ def test_tampered_permit_skill_binding_fails_closed_before_invoke():
         "skill_binding_digest": skill.binding_digest,
     })
     permit = _reissue(now, authority, action, clearance)
-    permit = permit.model_copy(update={"skill_binding_digest": "0" * 64})
+    permit = permit.model_copy(update={"skill_binding_digest": "sha256:" + "0" * 64})
     calls = []
 
     with pytest.raises(ValueError, match="permit skill binding mismatch"):
@@ -216,7 +217,7 @@ def _agent_skill() -> AgentSkillContext:
         skill_id="google/skills:cloud/agent-platform-skill-registry",
         skill_version="main",
         skill_source="https://github.com/google/skills",
-        skill_hash="a" * 64,
+        skill_hash="sha256:" + "a" * 64,
         skill_provenance={"registry": "google/skills", "format": "agent-skills"},
         skill_requested_capabilities=["registry.read"],
     )
