@@ -11,6 +11,7 @@ class ExecutionProtocol(str, Enum):
     ADK = "adk"
     MCP = "mcp"
     A2A = "a2a"
+    CDP = "cdp"
 
 
 class ExecutionMode(str, Enum):
@@ -18,6 +19,7 @@ class ExecutionMode(str, Enum):
     TOOL = "tool"
     REMOTE_AGENT = "remote_agent"
     SANDBOX = "sandbox"
+    BROWSER = "browser"
 
 
 class ExecutionTransportContext(BaseModel):
