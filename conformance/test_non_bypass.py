@@ -113,7 +113,7 @@ def test_agent_skill_capabilities_never_override_revoked_authority():
         skill_id="example/payment-skill",
         skill_version="1.0.0",
         skill_source="https://example.invalid/skills/payment",
-        skill_hash="b" * 64,
+        skill_hash="sha256:" + "b" * 64,
         skill_provenance={"format": "agent-skills"},
         skill_requested_capabilities=["payment.submit"],
     )
