@@ -16,6 +16,12 @@ from .bland import (
     BlandProposedAction,
     BlandRuntime,
 )
+from .claude_self_hosted import (
+    ClaudeRunnerMode,
+    ClaudeSelfHostedExecutionContext,
+    ClaudeSelfHostedProposedAction,
+    ClaudeSelfHostedRuntime,
+)
 from .cloudflare import (
     CloudflareExecutionContext,
     CloudflareExecutionSurface,
@@ -52,7 +58,11 @@ __all__ = [
     "BlandExecutionSurface",
     "BlandProposedAction",
     "BlandRuntime",
+    "ClaudeRunnerMode",
     "ClaudeRuntime",
+    "ClaudeSelfHostedExecutionContext",
+    "ClaudeSelfHostedProposedAction",
+    "ClaudeSelfHostedRuntime",
     "CloudflareBrowserBackend",
     "CloudflareBrowserContext",
     "CloudflareBrowserRunAdapter",
