@@ -1,0 +1,46 @@
+{
+  "id": "reht-visual",
+  "version": "1.0.0",
+  "language": "nb-NO",
+  "purpose": "Kanonisk stilprofil for REHT-bilder og visuell kommunikasjon.",
+  "principles": [
+    "Vis, ikke selg.",
+    "Informasjon først, effekt sist.",
+    "En idé per bilde.",
+    "Konsekvens før teknologi.",
+    "Dokumentarisk og troverdig fremfor futuristisk.",
+    "Uttrykket skal kunne stå i en seriøs avis, industrikampanje eller offentlig sikkerhetskampanje."
+  ],
+  "required": [
+    "Naturlig eller dokumentarisk lys.",
+    "Nøktern komposisjon med mye luft.",
+    "Få farger og tydelig typografi.",
+    "Konkrete mennesker, steder, maskiner eller situasjoner når motivet tillater det.",
+    "Norsk språk når målgruppen er norsk.",
+    "REHT omtales som autorisasjon før handling, handlingskontroll eller klarsignal før handling når teknisk navn ikke er nødvendig."
+  ],
+  "forbidden": [
+    "Generisk KI-reklameestetikk.",
+    "Neon, cyberpunk eller sci-fi som standarduttrykk.",
+    "Glødende skjold, hologrammer eller futuristiske grensesnitt.",
+    "Humanoide roboter som generisk symbol for KI.",
+    "Dramatisk rød-grønn alarmgrafikk uten konkret informasjonsverdi.",
+    "Cinematic som stilinstruks uten eksplisitt bestilling.",
+    "Clickbait-komposisjon, overdreven dramatikk eller kunstig frykt.",
+    "Engelske fagord når et presist norsk ord finnes."
+  ],
+  "editorial_test": "Hvis bildet kunne vært brukt uendret av et generisk KI-selskap, er det feil.",
+  "reference_world": [
+    "Nøkterne Volvo-, Saab- og Bosch-sikkerhetskampanjer.",
+    "Offentlige trafikksikkerhetskampanjer.",
+    "Dokumentarisk pressefoto.",
+    "Saklig industrikommunikasjon fra før den generiske KI-estetikken."
+  ],
+  "default_prompt_prefix": "Følg REHT-profilen: nøkternt, dokumentarisk og redaksjonelt. Ingen generisk KI-estetikk, ingen futurisme, ingen neon, ingen glødende skjold, ingen humanoid robot som standardmotiv. Vis én konkret situasjon og én konsekvens. Informasjon først, effekt sist. Norsk tekst der det er naturlig.",
+  "slogans": [
+    "Stopp. Vurder. Klarer. Handle.",
+    "Ingen klarsignal. Ingen handling.",
+    "Stopp feil før de blir handling.",
+    "Vurder før agenten handler."
+  ]
+}
