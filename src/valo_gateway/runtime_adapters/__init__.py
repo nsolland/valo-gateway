@@ -10,6 +10,12 @@ from .adk_go import (
     assert_confirmation_matches,
     validate_task_fanout,
 )
+from .cloudflare import (
+    CloudflareExecutionContext,
+    CloudflareExecutionSurface,
+    CloudflareProposedAction,
+    CloudflareRuntime,
+)
 from .cloudflare_browser import (
     CloudflareBrowserBackend,
     CloudflareBrowserContext,
@@ -40,6 +46,10 @@ __all__ = [
     "CloudflareBrowserBackend",
     "CloudflareBrowserContext",
     "CloudflareBrowserRunAdapter",
+    "CloudflareExecutionContext",
+    "CloudflareExecutionSurface",
+    "CloudflareProposedAction",
+    "CloudflareRuntime",
     "ExecutionInvocation",
     "ExecutionMode",
     "ExecutionProtocol",
