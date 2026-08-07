@@ -17,7 +17,11 @@ from .execution import (
     ExecutionTransportContext,
     RuntimeAgnosticExecutionAdapter,
 )
-from .gemini_managed import GeminiExecutionContext, GeminiManagedRuntime, GeminiProposedAction
+from .gemini_managed import (
+    GeminiExecutionContext,
+    GeminiManagedRuntime,
+    GeminiProposedAction,
+)
 
 __all__ = [
     "ADKCredentialBinding",
