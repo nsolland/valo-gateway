@@ -37,14 +37,30 @@ valo-gateway profile compare-parent parent.json child.json
 
 The Naïve architecture assessment and exact adoption decisions are recorded in `docs/NAIVE_ADOPTION.md`.
 
+## Google ADK Go
+
+Google ADK Go v2.1.x is a first-class runtime/harness target. Its TaskRunner, Agent Registry, model registry, tool declarations, confirmation flow, CredentialProvider, MCP per-request auth, tracing, analytics, remote agents and multi-model support remain non-authoritative inputs around the same execution boundary.
+
+```text
+ADK discovery / credentials / confirmation / TaskRunner
+  -> VALO action + runtime context
+  -> REHT clearance + one-shot permit
+  -> ADKTaskRunnerGate -> external tool / MCP / remote agent
+  -> ExecutionReceipt -> Veritas
+```
+
+`ADKGoIngress` keeps ADK metadata separate from VALO authority bindings. `ADKGoInvocationContext` rejects authority-like fields and raw credential material. `ADKTaskRunnerGate` requires the existing REHT-bound authority, clearance and one-shot permit before execution. TaskRunner fan-out cannot reuse one permit across independent children.
+
+The complete v2.1.0 change-by-change adoption matrix is in `docs/ADK_GO_V2_1_ADOPTION.md`.
+
 ## Packages
 
 - `contracts`: action, authority, clearance, permit, decision-contract and receipt types
 - `agent_profile`: runtime-agnostic governed profile, tool, budget, approval, session, audit and revocation contracts
 - `gateway`: binding validation, permit consumption, replay protection, HALT/revocation and fail-closed execution
 - `harness`: routing, lifecycle, event stream and checkpoint contracts
-- `protocols`: MCP, A2A, HTTP, gRPC and ext_authz ingress normalization
-- `runtime_adapters`: local, OpenAI, Claude and Google runtime adapters
+- `protocols`: ADK Go, MCP, A2A, HTTP, gRPC and ext_authz ingress normalization
+- `runtime_adapters`: ADK Go, local, OpenAI, Claude and Google runtime adapters
 - `tool_adapters`: mechanical tool wrappers and registry
 - `profiles`: governed communications, agent tool use, edge, enterprise sidecar and governed-agent reference profiles
 - `sdk`: plugin composition API
