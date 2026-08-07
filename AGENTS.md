@@ -40,6 +40,10 @@ proposal -> VAIG evidence -> REHT clearance + execution permit
   represented by opaque handles only.
 - **Every governed tool still requires REHT clearance.** Listing, compiling or
   injecting a tool into a harness is not authorization.
+- **Agent Skills are context, never authority.** Discovering, loading or
+  installing a `SKILL.md` package does not grant any capability. Skill identity,
+  source, content hash, provenance and requested capabilities are bound into the
+  action and must match the REHT clearance and one-shot permit at execution.
 - **Approval freezes the exact action.** Human approval is evidence consumed by
   REHT; execution requires re-clearance and a new one-shot permit.
 - **Activity logs are not proof.** Authoritative REHT decisions and Veritas
@@ -105,6 +109,9 @@ CI (`.github/workflows/ci.yml`) runs compileall + pytest on every push/PR.
 - The SDK composition path (ingress → harness → gateway → receipt) is covered.
 - Conformance tests prove non-bypass: plugins cannot create authority, and a
   permit is one-shot end-to-end.
+- Agent Skill tests prove the binding propagates action → clearance → permit →
+  receipt, mismatches fail before invocation, and skill capabilities never
+  override missing, revoked or expired authority.
 - A profile compiled for two runtimes has the same profile digest and tool set.
 - Live tool handles without explicit resource scope fail validation.
 - Raw credential material in a profile fails validation.
