@@ -74,14 +74,14 @@ class AgentSkillContext(BaseModel):
     skill_id: str
     skill_version: str
     skill_source: str
-    skill_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    skill_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
     skill_provenance: dict[str, str] = Field(default_factory=dict)
     skill_requested_capabilities: list[str] = Field(default_factory=list)
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     @property
     def binding_digest(self) -> str:
-        return canonical_digest(self.model_dump(mode="json"))
+        return "sha256:" + canonical_digest(self.model_dump(mode="json"))
 
 
 class ActionEnvelope(BaseModel):
