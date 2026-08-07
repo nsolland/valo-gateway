@@ -1,13 +1,19 @@
 import pytest
 
-from valo_gateway.style_profiles import load_style_profile, prompt_prefix
 from valo_gateway.style_mcp import apply_profile, get_profile, list_profiles
+from valo_gateway.style_profiles import load_style_profile, prompt_prefix
 
 
 def test_reht_profile_is_available():
     profile = load_style_profile("reht-visual")
     assert profile["id"] == "reht-visual"
-    assert profile["version"] == "1.0.0"
+    assert profile["version"] == "1.1.0"
+    assert profile["naming_rule"].startswith("reht skrives alltid")
+    assert profile["campaign_model"]["sequence"] == [
+        "premiss",
+        "vurdering",
+        "handling",
+    ]
     assert "Generisk KI-reklameestetikk." in profile["forbidden"]
     assert "Engelske fagord når et presist norsk ord finnes." in profile["forbidden"]
 
