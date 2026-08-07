@@ -8,9 +8,11 @@ import pytest
 from tests.conftest import make_chain
 from valo_gateway import (
     ActionEnvelope,
+    AgentSkillContext,
     Decision,
     ExecutionStatus,
     ValoGateway,
+    canonical_digest,
 )
 from valo_gateway.tool_adapters import FunctionTool
 
@@ -142,6 +144,82 @@ def test_receipt_hash_is_deterministic():
     assert r1.receipt.response_digest == r2.receipt.response_digest
     assert r1.receipt.action_digest == r2.receipt.action_digest
     assert r1.receipt.receipt_hash != r2.receipt.receipt_hash  # permit_id differ
+
+
+def test_legacy_action_digest_is_unchanged_when_no_skill_is_bound():
+    _, _, action, _, _ = make_chain()
+    legacy_payload = {
+        "action_type": action.action_type,
+        "target": action.target,
+        "parameters": action.parameters,
+        "context_digest": action.context_digest,
+        "policy_digest": action.policy_digest,
+        "authority_envelope_id": action.authority_envelope_id,
+        "nonce": action.nonce,
+    }
+    assert action.digest == canonical_digest(legacy_payload)
+
+
+def test_agent_skill_binding_propagates_to_permit_and_receipt():
+    now, authority, action, clearance, _ = make_chain()
+    skill = _agent_skill()
+    action = action.model_copy(update={"skill_context": skill})
+    clearance = clearance.model_copy(update={
+        "action_digest": action.digest,
+        "skill_binding_digest": skill.binding_digest,
+    })
+    permit = _reissue(now, authority, action, clearance)
+
+    result = ValoGateway().execute(
+        authority=authority, clearance=clearance, permit=permit, action=action,
+        executor_id="tool:registry", tool=FunctionTool("x", lambda: "ok"), now=now,
+    )
+
+    assert action.skill_binding_digest == skill.binding_digest
+    assert clearance.skill_binding_digest == skill.binding_digest
+    assert permit.skill_binding_digest == skill.binding_digest
+    assert result.receipt.skill_binding_digest == skill.binding_digest
+
+
+def test_skill_backed_action_requires_reht_clearance_to_bind_same_skill():
+    now, authority, action, clearance, _ = make_chain()
+    action = action.model_copy(update={"skill_context": _agent_skill()})
+    clearance = clearance.model_copy(update={"action_digest": action.digest})
+
+    with pytest.raises(ValueError, match="clearance skill binding mismatch"):
+        _reissue(now, authority, action, clearance)
+
+
+def test_tampered_permit_skill_binding_fails_closed_before_invoke():
+    now, authority, action, clearance, _ = make_chain()
+    skill = _agent_skill()
+    action = action.model_copy(update={"skill_context": skill})
+    clearance = clearance.model_copy(update={
+        "action_digest": action.digest,
+        "skill_binding_digest": skill.binding_digest,
+    })
+    permit = _reissue(now, authority, action, clearance)
+    permit = permit.model_copy(update={"skill_binding_digest": "0" * 64})
+    calls = []
+
+    with pytest.raises(ValueError, match="permit skill binding mismatch"):
+        ValoGateway().execute(
+            authority=authority, clearance=clearance, permit=permit, action=action,
+            executor_id="t", tool=FunctionTool("x", lambda: calls.append(1)), now=now,
+        )
+    assert calls == []
+    assert permit.consumed_at is None
+
+
+def _agent_skill() -> AgentSkillContext:
+    return AgentSkillContext(
+        skill_id="google/skills:cloud/agent-platform-skill-registry",
+        skill_version="main",
+        skill_source="https://github.com/google/skills",
+        skill_hash="a" * 64,
+        skill_provenance={"registry": "google/skills", "format": "agent-skills"},
+        skill_requested_capabilities=["registry.read"],
+    )
 
 
 def _reissue(now, authority, action, clearance):
