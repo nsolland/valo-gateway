@@ -133,13 +133,14 @@ def test_cloudflare_operational_state_is_non_authoritative():
 def test_gateway_remains_the_execution_gate_for_cloudflare():
     now, authority, action, clearance, permit = governed_fixture()
     seen = []
+    gateway = ValoGateway()
     adapter = CloudflareBrowserRunAdapter(
         context=CloudflareBrowserContext(account_ref="cloudflare-account:primary"),
         execution_context_hash="sha256:browser-context",
         dispatcher=lambda invocation: seen.append(invocation) or {"navigated": True},
     )
 
-    result = ValoGateway().execute(
+    result = gateway.execute(
         authority=authority,
         clearance=clearance,
         permit=permit,
@@ -154,7 +155,7 @@ def test_gateway_remains_the_execution_gate_for_cloudflare():
     assert len(seen) == 1
 
     with pytest.raises(ValueError, match="already consumed"):
-        ValoGateway().execute(
+        gateway.execute(
             authority=authority,
             clearance=clearance,
             permit=permit,
