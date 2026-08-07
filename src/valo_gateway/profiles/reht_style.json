@@ -1,9 +1,14 @@
 {
   "id": "reht-visual",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "language": "nb-NO",
   "purpose": "Kanonisk stilprofil for reht-bilder og visuell kommunikasjon.",
   "naming_rule": "reht skrives alltid med små bokstaver, også i overskrifter, løpende tekst og grafikk.",
+  "brand_signature": {
+    "wordmark": "reht",
+    "tagline": "STOPS STUPID",
+    "rule": "Taglinen er låst. Ikke utvid, omskriv eller forklar den i kampanjemateriell."
+  },
   "campaign_model": {
     "sequence": [
       "premiss",
@@ -15,7 +20,8 @@
     "default_structure": [
       "Én kort premiss-setning.",
       "Ett spørsmål som utløser vurdering.",
-      "reht. Right Before Action."
+      "reht",
+      "STOPS STUPID"
     ]
   },
   "principles": [
@@ -26,6 +32,7 @@
     "Start med noe mennesker allerede kjenner igjen før teknologien introduseres.",
     "La mottakeren fullføre tanken selv.",
     "reht er beslutningspunktet, ikke helten.",
+    "Stol på mottakerens intelligens.",
     "Dokumentarisk og troverdig fremfor futuristisk.",
     "Uttrykket skal kunne stå i en seriøs avis, industrikampanje eller offentlig sikkerhetskampanje."
   ],
@@ -37,8 +44,10 @@
     "Norsk språk når målgruppen er norsk.",
     "Kampanjemateriell følger premiss → vurdering → handling.",
     "Maks én hovedidé og én visuell metafor per kampanjeenhet.",
+    "Maks én setning før reht-signaturen når formatet tillater det.",
     "reht omtales som autorisasjon før handling, handlingskontroll eller klarsignal før handling når teknisk navn ikke er nødvendig.",
-    "Navnet reht skal aldri skrives som REHT, Reht eller annen variant."
+    "Navnet reht skal aldri skrives som REHT, Reht eller annen variant.",
+    "Kampanjer avsluttes med reht og STOPS STUPID når ikke annet er eksplisitt bestemt."
   ],
   "forbidden": [
     "Generisk KI-reklameestetikk.",
@@ -50,11 +59,15 @@
     "Clickbait-komposisjon, overdreven dramatikk eller kunstig frykt.",
     "Dashboards, kode eller arkitekturdiagrammer i kampanjemateriell med mindre selve poenget krever det.",
     "Teknisk forklaring før mottakeren har forstått den menneskelige situasjonen.",
+    "Buzzord og produktspråk som ikke er nødvendig for ideen.",
     "Engelske fagord når et presist norsk ord finnes.",
-    "Skrivemåtene REHT og Reht."
+    "Skrivemåtene REHT og Reht.",
+    "Varianter som STOPS BAD AI, STOPS BAD DECISIONS eller andre omskrivninger av STOPS STUPID."
   ],
   "editorial_test": "Hvis bildet kunne vært brukt uendret av et generisk KI-selskap, er det feil.",
   "campaign_test": "Hvis mottakeren må forstå teknologien før poenget virker, er kampanjen feil.",
+  "stop_test": "Hvis mottakeren ikke stopper opp og vurderer, er kampanjen feil.",
+  "explanation_test": "Hvis annonsen må forklare reht for å fungere, er den ikke ferdig.",
   "reference_world": [
     "Nøkterne Volvo-, Saab-, Bosch- og klassiske ABS-sikkerhetskampanjer.",
     "THINK! og andre offentlige trafikksikkerhetskampanjer.",
@@ -65,8 +78,9 @@
     "Dokumentarisk pressefoto.",
     "Saklig industrikommunikasjon fra før den generiske KI-estetikken."
   ],
-  "default_prompt_prefix": "Følg reht-profilen. Kampanjen skal bygges som premiss → vurdering → handling. Start med en universell menneskelig erfaring, skap ett mentalt stopp, og la reht komme til slutt som beslutningspunkt. Én idé, én visuell metafor, svært lite tekst. Nøkternt, dokumentarisk og redaksjonelt. reht skrives alltid med små bokstaver. Ingen generisk KI-estetikk, futurisme, neon, glødende skjold, humanoid robot som standardmotiv, dashboard eller unødvendig teknisk forklaring. Informasjon først, effekt sist.",
+  "default_prompt_prefix": "Følg reht-profilen. Kampanjen skal bygges som premiss → vurdering → handling. Start med en universell menneskelig erfaring, skap ett mentalt stopp, og la reht komme til slutt som beslutningspunkt. Én idé, én visuell metafor, svært lite tekst. Nøkternt, dokumentarisk og redaksjonelt. reht skrives alltid med små bokstaver. Ingen generisk KI-estetikk, futurisme, neon, glødende skjold, humanoid robot som standardmotiv, dashboard eller unødvendig teknisk forklaring. Stol på mottakeren. Avslutt normalt med reht og STOPS STUPID.",
   "slogans": [
+    "STOPS STUPID",
     "Stopp. Vurder. Klarer. Handle.",
     "Ingen klarsignal. Ingen handling.",
     "Stopp feil før de blir handling.",
@@ -77,17 +91,17 @@
     {
       "premise": "Would you give your teenager your card and PIN?",
       "assessment": "Would you?",
-      "action": "reht. Right Before Action."
+      "action": "reht\nSTOPS STUPID"
     },
     {
       "premise": "The AI says it's done.",
       "assessment": "Do you believe it?",
-      "action": "reht. Right Before Action."
+      "action": "reht\nSTOPS STUPID"
     },
     {
       "premise": "Everyone approved it.",
       "assessment": "Should you?",
-      "action": "reht. Right Before Action."
+      "action": "reht\nSTOPS STUPID"
     }
   ]
 }
