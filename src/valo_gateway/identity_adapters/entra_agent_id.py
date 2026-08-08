@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+import pydantic
 
 from ..contracts.models import canonical_digest, utcnow
 
@@ -53,7 +53,7 @@ class ConditionalAccessDecision(str, Enum):
     UNKNOWN = "unknown"
 
 
-class EntraAgentIdContext(BaseModel):
+class EntraAgentIdContext(pydantic.BaseModel):
     tenant_id: str
     agent_identity_id: str
     blueprint_id: str | None = None
@@ -62,13 +62,13 @@ class EntraAgentIdContext(BaseModel):
     subject_id: str | None = None
     audience: str
     resource: str | None = None
-    delegated_scopes: list[str] = Field(default_factory=list)
-    application_permissions: list[str] = Field(default_factory=list)
-    entra_roles: list[str] = Field(default_factory=list)
-    azure_roles: list[str] = Field(default_factory=list)
-    access_package_refs: list[str] = Field(default_factory=list)
-    owner_ids: list[str] = Field(default_factory=list)
-    sponsor_ids: list[str] = Field(default_factory=list)
+    delegated_scopes: list[str] = pydantic.Field(default_factory=list)
+    application_permissions: list[str] = pydantic.Field(default_factory=list)
+    entra_roles: list[str] = pydantic.Field(default_factory=list)
+    azure_roles: list[str] = pydantic.Field(default_factory=list)
+    access_package_refs: list[str] = pydantic.Field(default_factory=list)
+    owner_ids: list[str] = pydantic.Field(default_factory=list)
+    sponsor_ids: list[str] = pydantic.Field(default_factory=list)
     conditional_access: ConditionalAccessDecision = ConditionalAccessDecision.NOT_EVALUATED
     risk_level: str | None = None
     token_issued_at: datetime | None = None
@@ -77,17 +77,17 @@ class EntraAgentIdContext(BaseModel):
     disabled: bool = False
     revoked_at: datetime | None = None
     revocation_ref: str | None = None
-    evidence_refs: list[str] = Field(default_factory=list)
-    metadata: dict[str, Any] = Field(default_factory=dict)
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    evidence_refs: list[str] = pydantic.Field(default_factory=list)
+    metadata: dict[str, Any] = pydantic.Field(default_factory=dict)
+    model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
-    @model_validator(mode="before")
+    @pydantic.model_validator(mode="before")
     @classmethod
     def reject_authority_payload(cls, value: Any) -> Any:
         _reject_authority_claims(value)
         return value
 
-    @field_validator(
+    @pydantic.field_validator(
         "tenant_id",
         "agent_identity_id",
         "blueprint_id",
@@ -108,7 +108,7 @@ class EntraAgentIdContext(BaseModel):
             raise ValueError("Entra identity/access references must be non-empty")
         return value
 
-    @field_validator(
+    @pydantic.field_validator(
         "delegated_scopes",
         "application_permissions",
         "entra_roles",
@@ -125,7 +125,7 @@ class EntraAgentIdContext(BaseModel):
             raise ValueError("Entra list values must be non-empty")
         return normalized
 
-    @model_validator(mode="after")
+    @pydantic.model_validator(mode="after")
     def validate_context(self) -> EntraAgentIdContext:
         if self.access_mode is EntraAgentAccessMode.ON_BEHALF_OF and not self.subject_id:
             raise ValueError("subject_id is required for on-behalf-of agent access")
