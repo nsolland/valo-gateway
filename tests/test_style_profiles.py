@@ -7,7 +7,7 @@ from valo_gateway.style_profiles import load_style_profile, prompt_prefix
 def test_reht_profile_is_available():
     profile = load_style_profile("reht-visual")
     assert profile["id"] == "reht-visual"
-    assert profile["version"] == "1.1.0"
+    assert profile["version"] == "1.2.0"
     assert profile["naming_rule"].startswith("reht skrives alltid")
     assert profile["campaign_model"]["sequence"] == [
         "premiss",
