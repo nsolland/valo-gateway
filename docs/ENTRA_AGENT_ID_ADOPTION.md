@@ -72,7 +72,7 @@ The following are evidence only and never create VALO execution authority:
 
 Likewise, a Conditional Access block, disabled identity, revocation or expired token is sufficient provider state to make the normalized access context unusable. This fail-closed provider state still does not make the adapter a REHT policy engine.
 
-`EntraAgentIdContext.to_reht_evidence()` therefore emits `authoritative: false` explicitly and exposes no method that can issue a REHT clearance or one-shot execution permit.
+`EntraAgentIdContext.to_reht_evidence()` therefore emits `authoritative: false` explicitly and exposes no method that can issue a REHT clearance or one-shot execution permit. Arbitrary metadata is recursively rejected if it attempts to carry REHT authority-shaped fields such as a decision, clearance or permit.
 
 ## Delegated and autonomous modes
 
@@ -98,6 +98,27 @@ REHT
 = may this exact action against this exact target execute now under the active mandate and runtime state?
 ```
 
+## Least-privilege alignment
+
+Microsoft's least-privilege guidance for AI agents states that agent security must define identity, scope, tool access and auditability before autonomy expands. It recommends unique lifecycle-managed agent identities, named owners/sponsors, task-scoped roles, time-limited/JIT privileges, tool/action allowlists, revocation paths and end-to-end logging.
+
+It also requires authorization to be revalidated through the chain rather than trusted only at the orchestrator. That maps directly to the VALO boundary:
+
+```text
+Entra identity / roles / scopes / JIT state
+→ upstream authority facts and access evidence
+→ REHT exact-action authorization
+→ valo-gateway one-shot mechanical enforcement
+→ downstream system revalidation
+→ Veritas receipt
+```
+
+The integration rule is therefore:
+
+`Entra supplies identity, entitlement and access facts. REHT decides action admissibility.`
+
+Microsoft Entra can independently deny identity/resource access. A successful Entra access decision can never substitute for a REHT clearance and one-shot execution permit.
+
 ## Microsoft authorization constraints
 
 Microsoft Entra Agent ID applies additional least-privilege safeguards to agent identities. Agent identities can use Microsoft Entra roles and Microsoft Graph delegated/application permissions, but Microsoft blocks a set of high-privilege directory roles and Graph permissions for agents. Blueprint-level inheritable permissions can also project grants to agent identities created from a blueprint.
@@ -113,12 +134,14 @@ A configured Entra identity adapter cannot:
 - issue an `ExecutionPermit`;
 - upgrade DENY/DEFER/STEP_UP/HALT to ALLOW;
 - widen resource or purpose scope;
-- convert a provider token into execution authority.
+- convert a provider token into execution authority;
+- smuggle authority-shaped fields through provider metadata.
 
 The adapter only normalizes upstream facts for evaluation and binding.
 
 ## Sources
 
+- Microsoft Learn: Least privilege for AI agents (agentic identities + RBAC) — https://learn.microsoft.com/en-us/security/zero-trust/sfi/least-privilege-for-ai-agents
 - Microsoft Learn: Authorization in Microsoft Entra Agent ID — https://learn.microsoft.com/en-us/entra/agent-id/authorization-agent-id
 - Microsoft Learn: Conditional Access for agents — https://learn.microsoft.com/en-us/entra/identity/conditional-access/agent-id
 - Microsoft Learn: Agent identities in Microsoft Entra Agent ID — https://learn.microsoft.com/en-us/entra/agent-id/agent-identities
