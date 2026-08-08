@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -59,6 +60,15 @@ def test_provider_access_never_becomes_execution_authority():
     assert "decision" not in evidence
     assert "clearance" not in evidence
     assert "permit" not in evidence
+
+
+def test_metadata_cannot_smuggle_execution_authority():
+    with pytest.raises(ValidationError, match="cannot carry authority field"):
+        _context(metadata={"nested": {"permit_id": "provider-minted-permit"}})
+
+
+def test_reht_evidence_is_json_serializable():
+    json.dumps(_context().to_reht_evidence())
 
 
 def test_conditional_access_block_fails_current_access():
