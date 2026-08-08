@@ -1,12 +1,43 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from valo_gateway.contracts.models import canonical_digest, utcnow
+
+
+_FORBIDDEN_AUTHORITY_KEYS = {
+    "authoritative",
+    "authority_effect",
+    "authority_envelope_id",
+    "authority_grant",
+    "authorization",
+    "clearance",
+    "clearance_id",
+    "decision",
+    "decision_contract",
+    "execution_permit",
+    "permit",
+    "permit_id",
+    "reht_clearance",
+    "reht_decision",
+}
+
+
+def _reject_authority_claims(value: Any, path: str = "entra") -> None:
+    if isinstance(value, Mapping):
+        for key, nested in value.items():
+            normalized = str(key).strip().lower()
+            if normalized in _FORBIDDEN_AUTHORITY_KEYS:
+                raise ValueError(f"Entra context cannot carry authority field: {path}.{key}")
+            _reject_authority_claims(nested, f"{path}.{key}")
+    elif isinstance(value, (list, tuple)):
+        for index, nested in enumerate(value):
+            _reject_authority_claims(nested, f"{path}[{index}]")
 
 
 class EntraAgentAccessMode(str, Enum):
@@ -50,6 +81,50 @@ class EntraAgentIdContext(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    @model_validator(mode="before")
+    @classmethod
+    def reject_authority_payload(cls, value: Any) -> Any:
+        _reject_authority_claims(value)
+        return value
+
+    @field_validator(
+        "tenant_id",
+        "agent_identity_id",
+        "blueprint_id",
+        "blueprint_principal_id",
+        "subject_id",
+        "audience",
+        "resource",
+        "risk_level",
+        "session_id",
+        "revocation_ref",
+    )
+    @classmethod
+    def reject_blank_refs(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            raise ValueError("Entra identity/access references must be non-empty")
+        return value
+
+    @field_validator(
+        "delegated_scopes",
+        "application_permissions",
+        "entra_roles",
+        "azure_roles",
+        "access_package_refs",
+        "owner_ids",
+        "sponsor_ids",
+        "evidence_refs",
+    )
+    @classmethod
+    def reject_blank_list_values(cls, value: list[str]) -> list[str]:
+        normalized = [item.strip() for item in value]
+        if any(not item for item in normalized):
+            raise ValueError("Entra list values must be non-empty")
+        return normalized
+
     @model_validator(mode="after")
     def validate_context(self) -> EntraAgentIdContext:
         if self.access_mode is EntraAgentAccessMode.ON_BEHALF_OF and not self.subject_id:
@@ -77,39 +152,40 @@ class EntraAgentIdContext(BaseModel):
         return True
 
     def to_reht_evidence(self) -> dict[str, Any]:
+        serialized = self.model_dump(mode="json")
         return {
             "provider": "microsoft_entra_agent_id",
             "authoritative": False,
             "identity": {
-                "tenant_id": self.tenant_id,
-                "agent_identity_id": self.agent_identity_id,
-                "blueprint_id": self.blueprint_id,
-                "blueprint_principal_id": self.blueprint_principal_id,
-                "access_mode": self.access_mode.value,
-                "subject_id": self.subject_id,
-                "owner_ids": self.owner_ids,
-                "sponsor_ids": self.sponsor_ids,
+                "tenant_id": serialized["tenant_id"],
+                "agent_identity_id": serialized["agent_identity_id"],
+                "blueprint_id": serialized["blueprint_id"],
+                "blueprint_principal_id": serialized["blueprint_principal_id"],
+                "access_mode": serialized["access_mode"],
+                "subject_id": serialized["subject_id"],
+                "owner_ids": serialized["owner_ids"],
+                "sponsor_ids": serialized["sponsor_ids"],
             },
             "access": {
-                "audience": self.audience,
-                "resource": self.resource,
-                "delegated_scopes": self.delegated_scopes,
-                "application_permissions": self.application_permissions,
-                "entra_roles": self.entra_roles,
-                "azure_roles": self.azure_roles,
-                "access_package_refs": self.access_package_refs,
+                "audience": serialized["audience"],
+                "resource": serialized["resource"],
+                "delegated_scopes": serialized["delegated_scopes"],
+                "application_permissions": serialized["application_permissions"],
+                "entra_roles": serialized["entra_roles"],
+                "azure_roles": serialized["azure_roles"],
+                "access_package_refs": serialized["access_package_refs"],
             },
             "runtime_state": {
-                "conditional_access": self.conditional_access.value,
-                "risk_level": self.risk_level,
-                "token_issued_at": self.token_issued_at,
-                "token_expires_at": self.token_expires_at,
-                "session_id": self.session_id,
-                "disabled": self.disabled,
-                "revoked_at": self.revoked_at,
-                "revocation_ref": self.revocation_ref,
+                "conditional_access": serialized["conditional_access"],
+                "risk_level": serialized["risk_level"],
+                "token_issued_at": serialized["token_issued_at"],
+                "token_expires_at": serialized["token_expires_at"],
+                "session_id": serialized["session_id"],
+                "disabled": serialized["disabled"],
+                "revoked_at": serialized["revoked_at"],
+                "revocation_ref": serialized["revocation_ref"],
             },
-            "evidence_refs": self.evidence_refs,
-            "metadata": self.metadata,
+            "evidence_refs": serialized["evidence_refs"],
+            "metadata": serialized["metadata"],
             "binding_digest": self.binding_digest,
         }
