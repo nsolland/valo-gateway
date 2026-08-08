@@ -6,12 +6,15 @@ Canonical base-SHA: `a4ebad202003e16a4107cf5bc818d3c795c082c2`
 
 Branch: `feat/entra-agent-id-authority-context`
 
+Draft PR: `#15`
+
 Owner: ChatGPT execution worker
 
 Owned files:
 - `src/valo_gateway/identity_adapters/__init__.py`
 - `src/valo_gateway/identity_adapters/entra_agent_id.py`
 - `tests/test_entra_agent_id_adapter.py`
+- `conformance/test_entra_agent_id_non_authority.py`
 - `docs/ENTRA_AGENT_ID_ADOPTION.md`
 - `claims/entra-agent-id-authority-context.md`
 
