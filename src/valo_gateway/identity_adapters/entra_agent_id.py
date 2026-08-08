@@ -13,7 +13,7 @@ from pydantic import (
     model_validator,
 )
 
-from valo_gateway.contracts.models import canonical_digest, utcnow
+from ..contracts.models import canonical_digest, utcnow
 
 
 _FORBIDDEN_AUTHORITY_KEYS = {
