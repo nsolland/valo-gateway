@@ -18,5 +18,6 @@ from .agent_profile import (
 )
 from .contracts import *
 from .gateway import *
+from .veritas_handoff import build_veritas_execution_observation
 
 __version__ = "0.1.0"
