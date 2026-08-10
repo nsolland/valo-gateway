@@ -63,5 +63,5 @@ def build_veritas_execution_observation(
         "skill_binding_digest": receipt.skill_binding_digest,
         "authority_granted": False,
     }
-    payload["observation_digest"] = canonical_digest(payload)
+    payload["observation_digest"] = "sha256:" + canonical_digest(payload)
     return payload
