@@ -6,9 +6,9 @@ from valo_gateway.contracts import (
     ActionEnvelope,
     AuthorityEnvelope,
     Clearance,
-    ToolExecutionResult,
     canonical_digest,
 )
+from valo_gateway.gateway.core import ToolExecutionResult
 
 _SCHEMA = "valo.gateway.execution-observation.v1"
 
