@@ -1,6 +1,8 @@
+import asyncio
+
 import pytest
 
-from valo_gateway.style_mcp import apply_profile, get_profile, list_profiles
+from valo_gateway.style_mcp import apply_profile, get_profile, list_profiles, mcp
 from valo_gateway.style_profiles import load_style_profile, prompt_prefix
 
 
@@ -21,6 +23,20 @@ def test_reht_profile_is_available():
 def test_mcp_profile_tools_return_canonical_profile():
     assert "reht-visual" in list_profiles()
     assert get_profile()["editorial_test"].startswith("Hvis bildet kunne vært brukt")
+
+
+def test_mcp_2_server_registers_tools_and_resource_template():
+    tools = asyncio.run(mcp.list_tools())
+    templates = asyncio.run(mcp.list_resource_templates())
+
+    assert {tool.name for tool in tools} == {
+        "apply_profile",
+        "get_profile",
+        "list_profiles",
+    }
+    assert {str(template.uri_template) for template in templates} == {
+        "style://{profile_id}"
+    }
 
 
 def test_apply_profile_binds_contract_before_instruction():
