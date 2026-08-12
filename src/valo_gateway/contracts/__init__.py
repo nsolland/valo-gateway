@@ -9,6 +9,7 @@ from .models import (
     ExecutionPermit,
     ExecutionReceipt,
     ExecutionStatus,
+    GovernedWorkspaceLineage,
     canonical_digest,
     issue_execution_permit,
 )
@@ -16,5 +17,6 @@ from .models import (
 __all__ = [
     "ActionEnvelope", "AgentSkillContext", "AuthorityEnvelope", "AuthoritySource", "Clearance",
     "Decision", "DecisionContract", "ExecutionPermit", "ExecutionReceipt",
-    "ExecutionStatus", "canonical_digest", "issue_execution_permit",
+    "ExecutionStatus", "GovernedWorkspaceLineage", "canonical_digest",
+    "issue_execution_permit",
 ]
