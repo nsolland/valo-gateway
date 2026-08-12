@@ -84,6 +84,46 @@ class AgentSkillContext(BaseModel):
         return "sha256:" + canonical_digest(self.model_dump(mode="json"))
 
 
+class GovernedWorkspaceLineage(BaseModel):
+    tenant_id: str = Field(min_length=1)
+    work_unit_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    workspace_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    workspace_expires_at: datetime
+    program_ref: str = Field(min_length=1)
+    program_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    invocation_id: str = Field(min_length=1)
+    candidate_id: str = Field(min_length=1)
+    candidate_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    proposed_action_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    conformance_report_id: str = Field(min_length=1)
+    conformance_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    source_state_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    conformed_state_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    source_event_position: int = Field(ge=0)
+    conformed_at: datetime
+    dependency_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    workspace_binding_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    kernel_context_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    @model_validator(mode="after")
+    def validate_times(self) -> GovernedWorkspaceLineage:
+        if self.workspace_expires_at.utcoffset() is None:
+            raise ValueError("workspace_expires_at must be timezone-aware")
+        if self.conformed_at.utcoffset() is None:
+            raise ValueError("conformed_at must be timezone-aware")
+        return self
+
+    def is_active(self, now: datetime | None = None) -> bool:
+        now = now or utcnow()
+        return now < self.workspace_expires_at
+
+    @property
+    def binding_pair(self) -> tuple[str, str]:
+        return self.workspace_binding_digest, self.kernel_context_digest
+
+
 class ActionEnvelope(BaseModel):
     action_type: str
     target: str
@@ -92,6 +132,7 @@ class ActionEnvelope(BaseModel):
     policy_digest: str
     authority_envelope_id: str
     skill_context: AgentSkillContext | None = None
+    workspace_binding: GovernedWorkspaceLineage | None = None
     nonce: str = Field(default_factory=lambda: str(uuid4()))
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -100,11 +141,19 @@ class ActionEnvelope(BaseModel):
         payload = self.model_dump(mode="json")
         if payload["skill_context"] is None:
             payload.pop("skill_context")
+        if payload["workspace_binding"] is None:
+            payload.pop("workspace_binding")
         return canonical_digest(payload)
 
     @property
     def skill_binding_digest(self) -> str | None:
         return self.skill_context.binding_digest if self.skill_context is not None else None
+
+    @property
+    def workspace_binding_pair(self) -> tuple[str, str] | None:
+        if self.workspace_binding is None:
+            return None
+        return self.workspace_binding.binding_pair
 
 
 class DecisionContract(BaseModel):
@@ -126,14 +175,37 @@ class Clearance(BaseModel):
     valid_until: datetime
     reht_ref: str
     skill_binding_digest: str | None = None
+    workspace_binding_digest: str | None = Field(
+        default=None, pattern=r"^sha256:[0-9a-f]{64}$"
+    )
+    kernel_context_digest: str | None = Field(
+        default=None, pattern=r"^sha256:[0-9a-f]{64}$"
+    )
     evidence_refs: list[str] = Field(default_factory=list)
     policy_refs: list[str] = Field(default_factory=list)
     receipt_chain_hash: str | None = None
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    @model_validator(mode="after")
+    def validate_workspace_binding(self) -> Clearance:
+        if (self.workspace_binding_digest is None) != (
+            self.kernel_context_digest is None
+        ):
+            raise ValueError(
+                "workspace_binding_digest and kernel_context_digest must be bound together"
+            )
+        return self
+
     def authorizes_permit(self, now: datetime | None = None) -> bool:
         now = now or utcnow()
         return self.decision_contract.decision in {Decision.ALLOW, Decision.MODIFY} and now < self.valid_until
+
+    @property
+    def workspace_binding_pair(self) -> tuple[str, str] | None:
+        kernel_context_digest = self.kernel_context_digest
+        if self.workspace_binding_digest is None or kernel_context_digest is None:
+            return None
+        return self.workspace_binding_digest, kernel_context_digest
 
 
 class ExecutionPermit(BaseModel):
@@ -142,6 +214,15 @@ class ExecutionPermit(BaseModel):
     action_digest: str
     authority_envelope_id: str
     skill_binding_digest: str | None = None
+    workspace_binding_digest: str | None = Field(
+        default=None, pattern=r"^sha256:[0-9a-f]{64}$"
+    )
+    kernel_context_digest: str | None = Field(
+        default=None, pattern=r"^sha256:[0-9a-f]{64}$"
+    )
+    clearance_digest: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
     issued_at: datetime = Field(default_factory=utcnow)
     expires_at: datetime
     consumed_at: datetime | None = None
@@ -152,7 +233,22 @@ class ExecutionPermit(BaseModel):
     def validate_lifecycle(self) -> ExecutionPermit:
         if self.expires_at <= self.issued_at:
             raise ValueError("expires_at must be later than issued_at")
+        if (self.workspace_binding_digest is None) != (
+            self.kernel_context_digest is None
+        ):
+            raise ValueError(
+                "workspace_binding_digest and kernel_context_digest must be bound together"
+            )
+        if self.workspace_binding_digest is not None and self.clearance_digest is None:
+            raise ValueError("governed workspace permit requires clearance_digest")
         return self
+
+    @property
+    def workspace_binding_pair(self) -> tuple[str, str] | None:
+        kernel_context_digest = self.kernel_context_digest
+        if self.workspace_binding_digest is None or kernel_context_digest is None:
+            return None
+        return self.workspace_binding_digest, kernel_context_digest
 
     def is_usable(self, now: datetime | None = None) -> bool:
         now = now or utcnow()
@@ -184,13 +280,41 @@ class ExecutionReceipt(BaseModel):
     response_digest: str | None = None
     previous_receipt_hash: str | None = None
     skill_binding_digest: str | None = None
+    workspace_binding_digest: str | None = Field(
+        default=None, pattern=r"^sha256:[0-9a-f]{64}$"
+    )
+    kernel_context_digest: str | None = Field(
+        default=None, pattern=r"^sha256:[0-9a-f]{64}$"
+    )
+    clearance_digest: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
     model_config = ConfigDict(extra="forbid", frozen=True)
+
+    @model_validator(mode="after")
+    def validate_workspace_binding(self) -> ExecutionReceipt:
+        if (self.workspace_binding_digest is None) != (
+            self.kernel_context_digest is None
+        ):
+            raise ValueError(
+                "workspace_binding_digest and kernel_context_digest must be bound together"
+            )
+        if self.workspace_binding_digest is not None and self.clearance_digest is None:
+            raise ValueError("governed workspace receipt requires clearance_digest")
+        return self
 
     @property
     def receipt_hash(self) -> str:
         payload = self.model_dump(mode="json")
         if payload["skill_binding_digest"] is None:
             payload.pop("skill_binding_digest")
+        for optional_binding in (
+            "workspace_binding_digest",
+            "kernel_context_digest",
+            "clearance_digest",
+        ):
+            if payload[optional_binding] is None:
+                payload.pop(optional_binding)
         return canonical_digest(payload)
 
 
@@ -208,6 +332,10 @@ def issue_execution_permit(*, clearance: Clearance, authority: AuthorityEnvelope
         raise ValueError("clearance action binding mismatch")
     if clearance.skill_binding_digest != action.skill_binding_digest:
         raise ValueError("clearance skill binding mismatch")
+    if clearance.workspace_binding_pair != action.workspace_binding_pair:
+        raise ValueError("clearance workspace binding mismatch")
+    if action.workspace_binding is not None and not action.workspace_binding.is_active(now):
+        raise ValueError("governed workspace is expired at permit issuance")
     contract = clearance.decision_contract
     if contract.principal_id != authority.principal_id or contract.actor_id != authority.actor_id:
         raise ValueError("decision contract identity binding mismatch")
@@ -217,11 +345,30 @@ def issue_execution_permit(*, clearance: Clearance, authority: AuthorityEnvelope
         raise ValueError("clearance decision cannot issue an execution permit")
     if expires_at > clearance.valid_until or expires_at > authority.valid_until:
         raise ValueError("permit cannot outlive clearance or authority")
+    if (
+        action.workspace_binding is not None
+        and expires_at > action.workspace_binding.workspace_expires_at
+    ):
+        raise ValueError("permit cannot outlive governed workspace")
+    clearance_digest = None
+    if action.workspace_binding is not None:
+        clearance_digest = canonical_digest(clearance.model_dump(mode="json"))
     return ExecutionPermit(
         clearance_id=clearance.clearance_id,
         action_digest=action.digest,
         authority_envelope_id=authority.envelope_id,
         skill_binding_digest=action.skill_binding_digest,
+        workspace_binding_digest=(
+            action.workspace_binding.workspace_binding_digest
+            if action.workspace_binding is not None
+            else None
+        ),
+        kernel_context_digest=(
+            action.workspace_binding.kernel_context_digest
+            if action.workspace_binding is not None
+            else None
+        ),
+        clearance_digest=clearance_digest,
         issued_at=now,
         expires_at=expires_at,
     )

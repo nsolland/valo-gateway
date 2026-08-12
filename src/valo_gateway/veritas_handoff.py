@@ -41,6 +41,22 @@ def build_veritas_execution_observation(
         raise ValueError("consumed permit action binding mismatch")
     if consumed.clearance_id != clearance.clearance_id:
         raise ValueError("consumed permit clearance binding mismatch")
+    if clearance.workspace_binding_pair != action.workspace_binding_pair:
+        raise ValueError("clearance workspace binding mismatch")
+    if consumed.workspace_binding_pair != action.workspace_binding_pair:
+        raise ValueError("consumed permit workspace binding mismatch")
+    if (
+        receipt.workspace_binding_digest,
+        receipt.kernel_context_digest,
+    ) != (consumed.workspace_binding_digest, consumed.kernel_context_digest):
+        raise ValueError("receipt workspace binding mismatch")
+    expected_clearance_digest = None
+    if action.workspace_binding is not None:
+        expected_clearance_digest = canonical_digest(clearance.model_dump(mode="json"))
+    if consumed.clearance_digest != expected_clearance_digest:
+        raise ValueError("consumed permit clearance digest mismatch")
+    if receipt.clearance_digest != expected_clearance_digest:
+        raise ValueError("receipt clearance digest mismatch")
 
     payload: dict[str, Any] = {
         "schema": _SCHEMA,
@@ -63,5 +79,13 @@ def build_veritas_execution_observation(
         "skill_binding_digest": receipt.skill_binding_digest,
         "authority_granted": False,
     }
+    if action.workspace_binding is not None:
+        payload.update(
+            {
+                "workspace_binding": action.workspace_binding.model_dump(mode="json"),
+                "workspace_binding_digest": consumed.workspace_binding_digest,
+                "kernel_context_digest": consumed.kernel_context_digest,
+            }
+        )
     payload["observation_digest"] = "sha256:" + canonical_digest(payload)
     return payload

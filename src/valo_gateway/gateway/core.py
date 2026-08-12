@@ -71,6 +71,9 @@ class ValoGateway:
                 response_digest=canonical_digest(response),
                 previous_receipt_hash=previous_receipt_hash,
                 skill_binding_digest=consumed.skill_binding_digest,
+                workspace_binding_digest=consumed.workspace_binding_digest,
+                kernel_context_digest=consumed.kernel_context_digest,
+                clearance_digest=consumed.clearance_digest,
             )
             return ToolExecutionResult(consumed_permit=consumed, receipt=receipt, response=response)
         except Exception as exc:
@@ -85,6 +88,9 @@ class ValoGateway:
                 response_digest=canonical_digest({"error_type": type(exc).__name__, "error": str(exc)}),
                 previous_receipt_hash=previous_receipt_hash,
                 skill_binding_digest=consumed.skill_binding_digest,
+                workspace_binding_digest=consumed.workspace_binding_digest,
+                kernel_context_digest=consumed.kernel_context_digest,
+                clearance_digest=consumed.clearance_digest,
             )
             return ToolExecutionResult(
                 consumed_permit=consumed,
@@ -100,6 +106,8 @@ class ValoGateway:
             raise ValueError("authority envelope is inactive or revoked at execution time")
         if not clearance.authorizes_permit(now):
             raise ValueError("clearance is no longer valid at execution time")
+        if action.workspace_binding is not None and not action.workspace_binding.is_active(now):
+            raise ValueError("governed workspace is expired at execution time")
         if not permit.is_usable(now):
             raise ValueError("execution permit is expired, not yet active, or already consumed")
         if action.authority_envelope_id != authority.envelope_id:
@@ -118,3 +126,12 @@ class ValoGateway:
             raise ValueError("clearance skill binding mismatch")
         if permit.skill_binding_digest != action.skill_binding_digest:
             raise ValueError("permit skill binding mismatch")
+        if clearance.workspace_binding_pair != action.workspace_binding_pair:
+            raise ValueError("clearance workspace binding mismatch")
+        if permit.workspace_binding_pair != action.workspace_binding_pair:
+            raise ValueError("permit workspace binding mismatch")
+        expected_clearance_digest = None
+        if action.workspace_binding is not None:
+            expected_clearance_digest = canonical_digest(clearance.model_dump(mode="json"))
+        if permit.clearance_digest != expected_clearance_digest:
+            raise ValueError("permit clearance digest mismatch")
