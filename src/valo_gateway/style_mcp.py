@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import json
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
 from .style_profiles import list_style_profiles, load_style_profile, prompt_prefix
 
-mcp = FastMCP("VALO Style Profiles")
+mcp = MCPServer("VALO Style Profiles")
 
 
 @mcp.resource("style://{profile_id}")
