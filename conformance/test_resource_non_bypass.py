@@ -53,7 +53,7 @@ def _ledger(*budget_ids: str) -> ResourceBudgetLedger:
         ResourceBudget(
             budget_id=budget_id,
             dimension=budget_id,
-            hard_limit=Decimal("10000"),
+            hard_limit=Decimal(10000),
         )
         for budget_id in budget_ids
     )
@@ -163,7 +163,7 @@ def test_reservation_bound_to_other_permit_cannot_authorize_effect() -> None:
     reservation = ledger.reserve(
         budget_id="tool_calls",
         window_id="session:stage2",
-        amount=Decimal("1"),
+        amount=Decimal(1),
         action_digest=action.digest,
         clearance_id=clearance.clearance_id,
         permit_id="permit:other",
