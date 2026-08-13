@@ -76,6 +76,7 @@ def _reserve(
         action_digest=action.digest,
         clearance_id=clearance.clearance_id,
         permit_id=permit.permit_id,
+        now=permit.issued_at,
     )
 
 
@@ -167,6 +168,7 @@ def test_reservation_bound_to_other_permit_cannot_authorize_effect() -> None:
         action_digest=action.digest,
         clearance_id=clearance.clearance_id,
         permit_id="permit:other",
+        now=now,
     )
     calls: list[int] = []
     with pytest.raises(ValueError, match="permit binding mismatch"):
