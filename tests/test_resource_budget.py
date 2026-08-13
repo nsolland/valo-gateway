@@ -39,12 +39,12 @@ def test_cumulative_budget_reserves_pending_capacity_fail_closed() -> None:
             ResourceBudget(
                 budget_id="tool-calls",
                 dimension="tool_calls",
-                hard_limit=Decimal("3"),
+                hard_limit=Decimal(3),
             ),
         )
     )
     first = _reserve(ledger, budget_id="tool-calls", amount="2")
-    assert ledger.remaining(budget_id="tool-calls", window_id="window:1") == Decimal("1")
+    assert ledger.remaining(budget_id="tool-calls", window_id="window:1") == Decimal(1)
     with pytest.raises(ValueError, match="hard limit exceeded"):
         _reserve(ledger, budget_id="tool-calls", amount="2")
     assert ledger.is_pending(first.reservation_id)
@@ -56,7 +56,7 @@ def test_consumption_commits_capacity_and_cannot_be_replayed() -> None:
             ResourceBudget(
                 budget_id="cost",
                 dimension="cost_minor",
-                hard_limit=Decimal("1000"),
+                hard_limit=Decimal(1000),
             ),
         )
     )
@@ -71,7 +71,7 @@ def test_consumption_commits_capacity_and_cannot_be_replayed() -> None:
     assert len(consumed) == 1
     assert consumed[0].digest
     assert not ledger.is_pending(reservation.reservation_id)
-    assert ledger.remaining(budget_id="cost", window_id="window:1") == Decimal("600")
+    assert ledger.remaining(budget_id="cost", window_id="window:1") == Decimal(600)
     with pytest.raises(ValueError, match="missing, unknown, or already consumed"):
         ledger.consume_many(
             reservations=(reservation,),
@@ -88,7 +88,7 @@ def test_max_per_action_enforces_recursion_depth_without_accumulating() -> None:
             ResourceBudget(
                 budget_id="depth",
                 dimension="recursion_depth",
-                hard_limit=Decimal("3"),
+                hard_limit=Decimal(3),
                 mode=ResourceBudgetMode.MAX_PER_ACTION,
             ),
         )
@@ -102,7 +102,7 @@ def test_max_per_action_enforces_recursion_depth_without_accumulating() -> None:
         permit_id="permit:1",
     )
     second = _reserve(ledger, budget_id="depth", amount="2", permit="permit:2")
-    assert second.amount == Decimal("2")
+    assert second.amount == Decimal(2)
     with pytest.raises(ValueError, match="hard limit exceeded"):
         _reserve(ledger, budget_id="depth", amount="4", permit="permit:3")
 
@@ -113,12 +113,12 @@ def test_multi_budget_consumption_is_atomic_on_binding_failure() -> None:
             ResourceBudget(
                 budget_id="tool",
                 dimension="tool_calls",
-                hard_limit=Decimal("10"),
+                hard_limit=Decimal(10),
             ),
             ResourceBudget(
                 budget_id="value",
                 dimension="transaction_value_minor",
-                hard_limit=Decimal("10000"),
+                hard_limit=Decimal(10000),
             ),
         )
     )
