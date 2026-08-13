@@ -8,8 +8,24 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .contracts import canonical_digest
+from .contracts import ActionEnvelope, canonical_digest
 from .contracts.models import utcnow
+
+RESOURCE_BUDGET_IDS_PARAMETER = "_valo_resource_budget_ids"
+
+
+def required_resource_budget_ids(action: ActionEnvelope) -> tuple[str, ...]:
+    raw = action.parameters.get(RESOURCE_BUDGET_IDS_PARAMETER, ())
+    if raw in (None, ()):
+        return ()
+    if not isinstance(raw, (list, tuple)):
+        raise ValueError("resource budget ids must be an explicit list")
+    values = tuple(raw)
+    if not all(isinstance(value, str) and value for value in values):
+        raise ValueError("resource budget ids must be non-empty strings")
+    if len(values) != len(set(values)):
+        raise ValueError("resource budget ids must be unique")
+    return tuple(sorted(values))
 
 
 class ResourceBudgetMode(str, Enum):
@@ -67,12 +83,6 @@ class ConsumedResourceReservation(BaseModel):
 
 
 class ResourceBudgetLedger:
-    """Mechanical resource reservation and consumption ledger.
-
-    The ledger receives explicit limits and resource requirements. It never
-    infers policy, creates authority, or upgrades a REHT decision.
-    """
-
     def __init__(self, budgets: tuple[ResourceBudget, ...] = ()) -> None:
         self._lock = RLock()
         self._budgets: dict[str, ResourceBudget] = {}
@@ -179,10 +189,7 @@ class ResourceBudgetLedger:
                     key = (reservation.budget_id, reservation.window_id)
                     self._committed[key] = self._committed.get(key, Decimal(0)) + reservation.amount
                 consumed.append(
-                    ConsumedResourceReservation(
-                        reservation=reservation,
-                        consumed_at=now,
-                    )
+                    ConsumedResourceReservation(reservation=reservation, consumed_at=now)
                 )
             return tuple(consumed)
 
