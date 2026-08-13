@@ -19,7 +19,7 @@ def required_resource_budget_ids(action: ActionEnvelope) -> tuple[str, ...]:
     if raw in (None, ()):
         return ()
     if not isinstance(raw, (list, tuple)):
-        raise ValueError("resource budget ids must be an explicit list")
+        raise TypeError("resource budget ids must be an explicit list")
     values = tuple(raw)
     if not all(isinstance(value, str) and value for value in values):
         raise ValueError("resource budget ids must be non-empty strings")
