@@ -2,7 +2,8 @@
 
 - Active delivery: enforce `NO_DIRECT_EFFECT_PATH`, `NULL_EFFECT_ON_DENY`, structural coupling, effector-exclusive credentials/capabilities and deterministic boundary replay.
 - Repository: `nsolland/valo-gateway`
-- Canonical base: `56501e3083be46a6f2a4028bd6f99121ce6d08b6`
+- Canonical base: `dbfdae75fa44b4a58b9622289953817378268be2` (includes merged confidential-execution binding #26).
+- Initial claim base: `56501e3083be46a6f2a4028bd6f99121ce6d08b6`.
 - Branch: `feat/effect-boundary-conformance`
 - Owner/claim: Codex `/root` on behalf of Njål.
 - Owned files:
@@ -17,14 +18,16 @@
   - `src/valo_gateway/tool_adapters/__init__.py`
   - `src/valo_gateway/veritas_handoff.py`
   - `conformance/test_effect_boundary_conformance.py`
+  - `conformance/test_tee_execution_non_bypass.py`
   - `tests/test_registry_router.py`
   - `tests/test_cloudflare_browser_adapter.py`
   - `tests/test_execution_adapter.py`
   - `tests/test_sdk.py`
   - `tests/test_veritas_handoff.py`
+  - `tests/test_tee_execution_binding.py`
   - `docs/ARCHITECTURE.md`
   - `docs/EFFECT_BOUNDARY_CONFORMANCE.md`
   - this work anchor
-- Verification: 188 tests pass; Python compileall and Ruff pass.
+- Verification: 195 tests pass; Python compileall and Ruff pass after reconciliation with confidential-execution binding #26.
 - Dependencies: REHT clearance and RACS deterministic decision inputs are consumed, never recreated; Veritas remains the outcome verifier.
 - External dependencies: none. GATE, Microsoft AGT and z-gateway are evidence only.
