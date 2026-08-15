@@ -88,7 +88,9 @@ def build_veritas_execution_observation(
     if action.workspace_binding is not None:
         payload.update(
             {
-                "workspace_binding": action.workspace_binding.model_dump(mode="json"),
+                "workspace_binding": action.workspace_binding.model_dump(
+                    mode="json", exclude={"execution_substrate_binding"}
+                ),
                 "workspace_binding_digest": consumed.workspace_binding_digest,
                 "kernel_context_digest": consumed.kernel_context_digest,
             }
