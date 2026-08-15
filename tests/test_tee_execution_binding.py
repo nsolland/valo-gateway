@@ -112,11 +112,12 @@ def _chain(now: datetime | None = None, *, max_age: int = 120):
         kernel_context_digest=lineage.kernel_context_digest,
         execution_substrate_digest=substrate.binding_digest,
     )
+    permit_seconds = min(30, max_age - 2)
     permit = issue_execution_permit(
         clearance=clearance,
         authority=authority,
         action=action,
-        expires_at=now + timedelta(seconds=30),
+        expires_at=now + timedelta(seconds=permit_seconds),
         now=now,
     )
     return now, substrate, authority, action, clearance, permit
