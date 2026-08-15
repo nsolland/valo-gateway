@@ -80,6 +80,12 @@ class ValoGateway:
             effector_registry is None or effector_handle is None
         ):
             raise ValueError("effector registry and handle must be bound together")
+        if tool is not None and not callable(
+            getattr(tool, "_invoke_from_boundary", None)
+        ):
+            raise PermissionError(
+                "NO_DIRECT_EFFECT_PATH: effector lacks boundary-only dispatch"
+            )
         if permit.permit_id in self._consumed_permits:
             raise ValueError("execution permit is already consumed")
         self._validate_binding(authority, clearance, permit, action, now)

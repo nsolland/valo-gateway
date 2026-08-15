@@ -314,6 +314,29 @@ def test_negative_bypass_raw_credential_material_is_rejected() -> None:
         )
 
 
+def test_negative_bypass_public_only_effector_is_rejected_before_consumption() -> None:
+    now, authority, action, clearance, permit = make_chain()
+    calls: list[int] = []
+
+    class PublicOnlyEffector:
+        def invoke(self, arguments):
+            calls.append(1)
+
+    with pytest.raises(PermissionError, match="NO_DIRECT_EFFECT_PATH"):
+        ValoGateway().execute(
+            authority=authority,
+            clearance=clearance,
+            permit=permit,
+            action=action,
+            executor_id="effector:legacy",
+            tool=PublicOnlyEffector(),
+            now=now,
+        )
+
+    assert calls == []
+    assert permit.consumed_at is None
+
+
 def test_decision_relevant_memory_write_uses_the_same_governed_path() -> None:
     now, authority, action, clearance, permit = _memory_write_chain()
     writes: list[str] = []

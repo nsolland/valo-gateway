@@ -20,7 +20,8 @@ It normalizes ingress, validates an exact REHT clearance, consumes a one-shot ex
 10. `NULL_EFFECT_ON_DENY`: `DENY`, `DEFER`, `STEP_UP` and `HALT` invoke no
     effector and produce no consequence.
 11. Live effector credentials and executable capabilities exist only behind the
-    governed path; callers receive opaque, exact-action-bound handles.
+    governed path; callers receive opaque, exact-action-bound handles. Public
+    runtime-adapter invocation is non-dispatching and fails closed.
 12. Boundary replay is deterministic over pinned contract, state, authority,
     evidence and decision inputs. It validates the boundary without calling the
     effector and does not attempt token-level LLM replay.

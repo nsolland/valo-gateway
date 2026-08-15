@@ -11,16 +11,20 @@
   - `src/valo_gateway/contracts/__init__.py`
   - `src/valo_gateway/contracts/models.py`
   - `src/valo_gateway/gateway/core.py`
+  - `src/valo_gateway/runtime_adapters/cloudflare_browser.py`
+  - `src/valo_gateway/runtime_adapters/execution.py`
   - `src/valo_gateway/tool_adapters/base.py`
   - `src/valo_gateway/tool_adapters/__init__.py`
   - `src/valo_gateway/veritas_handoff.py`
   - `conformance/test_effect_boundary_conformance.py`
   - `tests/test_registry_router.py`
+  - `tests/test_cloudflare_browser_adapter.py`
+  - `tests/test_execution_adapter.py`
   - `tests/test_sdk.py`
   - `tests/test_veritas_handoff.py`
   - `docs/ARCHITECTURE.md`
   - `docs/EFFECT_BOUNDARY_CONFORMANCE.md`
   - this work anchor
-- Verification: 187 tests pass; Python compileall and Ruff pass.
+- Verification: 188 tests pass; Python compileall and Ruff pass.
 - Dependencies: REHT clearance and RACS deterministic decision inputs are consumed, never recreated; Veritas remains the outcome verifier.
 - External dependencies: none. GATE, Microsoft AGT and z-gateway are evidence only.

@@ -137,12 +137,12 @@ def _invoke_tool_from_boundary(
     proof: BoundaryProof,
 ) -> Any:
     _validate_boundary_proof(proof)
-    if isinstance(tool, FunctionTool):
-        return tool._invoke_from_boundary(arguments, proof)
-    invoke = getattr(tool, "invoke", None)
+    invoke = getattr(tool, "_invoke_from_boundary", None)
     if not callable(invoke):
-        raise TypeError("effector does not implement the adapter contract")
-    return invoke(arguments)
+        raise PermissionError(
+            "NO_DIRECT_EFFECT_PATH: effector lacks boundary-only dispatch"
+        )
+    return invoke(arguments, proof)
 
 
 def _validate_boundary_proof(proof: BoundaryProof) -> None:

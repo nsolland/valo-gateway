@@ -20,8 +20,11 @@ uninvoked.
 
 `ToolRegistry` retains the executable tool and only exposes an opaque
 `EffectorHandle` bound to one capability, target and optional opaque credential
-reference. `FunctionTool.invoke()` rejects direct calls. The Gateway validates
-the handle against the exact action before consuming resources or the permit.
+reference. `FunctionTool.invoke()` and consequence-bearing runtime-adapter
+`invoke()` methods reject direct calls. Adapters may build a pure invocation
+description, but only the Gateway can pass a sealed boundary proof to dispatch
+it. Public-only legacy effectors are rejected before resources or a permit are
+consumed. The Gateway validates registered handles against the exact action.
 Raw credential material is not accepted by this contract.
 
 Secret-free runtime and transport adapters remain normalizers. Possession of an
