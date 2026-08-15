@@ -14,6 +14,16 @@ It normalizes ingress, validates an exact REHT clearance, consumes a one-shot ex
 6. Runtime and tool plugins never create authority or upgrade a decision.
 7. Protocol adapters normalize transport; they do not interpret policy.
 8. Receipt sinks record evidence; they do not authorize.
+9. `NO_DIRECT_EFFECT_PATH`: every consequence-bearing effect, including a state
+   or memory write that can alter a future consequence-bearing decision, crosses
+   the governed enforcement boundary.
+10. `NULL_EFFECT_ON_DENY`: `DENY`, `DEFER`, `STEP_UP` and `HALT` invoke no
+    effector and produce no consequence.
+11. Live effector credentials and executable capabilities exist only behind the
+    governed path; callers receive opaque, exact-action-bound handles.
+12. Boundary replay is deterministic over pinned contract, state, authority,
+    evidence and decision inputs. It validates the boundary without calling the
+    effector and does not attempt token-level LLM replay.
 
 ## Governed agent profile
 

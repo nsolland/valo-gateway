@@ -37,6 +37,7 @@ def test_handoff_binds_consumed_permit_authorization_action_and_receipt():
     assert payload["authority_envelope_id"] == authority.envelope_id
     assert payload["action_digest"] == action.digest
     assert payload["receipt_hash"] == result.receipt.receipt_hash
+    assert payload["boundary_replay_digest"] == result.boundary_replay.result_digest
     assert payload["observation_digest"].startswith("sha256:")
     assert payload["authority_granted"] is False
 

@@ -1,3 +1,10 @@
+from .boundary import (
+    BoundaryReplayInput,
+    BoundaryReplayOutcome,
+    BoundaryReplayResult,
+    GovernanceBasisState,
+    replay_effect_boundary,
+)
 from .models import (
     ActionEnvelope,
     AgentSkillContext,
@@ -15,8 +22,22 @@ from .models import (
 )
 
 __all__ = [
-    "ActionEnvelope", "AgentSkillContext", "AuthorityEnvelope", "AuthoritySource", "Clearance",
-    "Decision", "DecisionContract", "ExecutionPermit", "ExecutionReceipt",
-    "ExecutionStatus", "GovernedWorkspaceLineage", "canonical_digest",
+    "ActionEnvelope",
+    "AgentSkillContext",
+    "AuthorityEnvelope",
+    "AuthoritySource",
+    "BoundaryReplayInput",
+    "BoundaryReplayOutcome",
+    "BoundaryReplayResult",
+    "Clearance",
+    "Decision",
+    "DecisionContract",
+    "ExecutionPermit",
+    "ExecutionReceipt",
+    "ExecutionStatus",
+    "GovernanceBasisState",
+    "GovernedWorkspaceLineage",
+    "canonical_digest",
     "issue_execution_permit",
+    "replay_effect_boundary",
 ]

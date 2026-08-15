@@ -1,3 +1,3 @@
-from .base import FunctionTool, ToolRegistry
+from .base import EffectorHandle, FunctionTool, ToolRegistry
 
-__all__ = ["FunctionTool", "ToolRegistry"]
+__all__ = ["EffectorHandle", "FunctionTool", "ToolRegistry"]
