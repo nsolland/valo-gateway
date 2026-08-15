@@ -1,0 +1,19 @@
+# Work anchor — effect-boundary conformance
+
+- Active delivery: enforce NO_DIRECT_EFFECT_PATH, NULL_EFFECT_ON_DENY, structural coupling, effector-exclusive credentials/capabilities and deterministic boundary replay.
+- Repository: `nsolland/valo-gateway`
+- Canonical base: `56501e3083be46a6f2a4028bd6f99121ce6d08b6`
+- Branch: `feat/effect-boundary-conformance`
+- Owner/claim: Codex `/root` on behalf of Njål.
+- Owned files:
+  - `src/valo_gateway/contracts/models.py`
+  - `src/valo_gateway/gateway/core.py`
+  - `src/valo_gateway/tool_adapters/base.py`
+  - `src/valo_gateway/__init__.py`
+  - `src/valo_gateway/tool_adapters/__init__.py`
+  - `conformance/test_effect_boundary_conformance.py`
+  - `docs/EFFECT_BOUNDARY_CONFORMANCE.md`
+  - `AGENTS.md`
+  - this work anchor
+- Dependencies: REHT clearance and RACS deterministic decision inputs are consumed, never recreated; Veritas remains the outcome verifier.
+- External dependencies: none. GATE, Microsoft AGT and z-gateway are evidence only.
