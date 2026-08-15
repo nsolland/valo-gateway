@@ -4,6 +4,7 @@ from .models import (
     AuthorityEnvelope,
     AuthoritySource,
     Clearance,
+    ConfidentialExecutionBinding,
     Decision,
     DecisionContract,
     ExecutionPermit,
@@ -15,8 +16,18 @@ from .models import (
 )
 
 __all__ = [
-    "ActionEnvelope", "AgentSkillContext", "AuthorityEnvelope", "AuthoritySource", "Clearance",
-    "Decision", "DecisionContract", "ExecutionPermit", "ExecutionReceipt",
-    "ExecutionStatus", "GovernedWorkspaceLineage", "canonical_digest",
+    "ActionEnvelope",
+    "AgentSkillContext",
+    "AuthorityEnvelope",
+    "AuthoritySource",
+    "Clearance",
+    "ConfidentialExecutionBinding",
+    "Decision",
+    "DecisionContract",
+    "ExecutionPermit",
+    "ExecutionReceipt",
+    "ExecutionStatus",
+    "GovernedWorkspaceLineage",
+    "canonical_digest",
     "issue_execution_permit",
 ]

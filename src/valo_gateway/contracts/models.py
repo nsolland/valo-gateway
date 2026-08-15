@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from hashlib import sha256
-from typing import Any
+from typing import Any, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -15,7 +15,13 @@ def utcnow() -> datetime:
 
 
 def canonical_digest(value: Any) -> str:
-    raw = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str).encode()
+    raw = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        default=str,
+    ).encode()
     return sha256(raw).hexdigest()
 
 
@@ -84,6 +90,67 @@ class AgentSkillContext(BaseModel):
         return "sha256:" + canonical_digest(self.model_dump(mode="json"))
 
 
+class ConfidentialExecutionBinding(BaseModel):
+    schema_version: Literal["confidential_execution_binding.v1"] = (
+        "confidential_execution_binding.v1"
+    )
+    substrate_kind: Literal["TEE"] = "TEE"
+    attested_workspace_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    substrate_attestation_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    attestation_evidence_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    substrate_id: str = Field(min_length=1)
+    tee_type: str = Field(min_length=1)
+    gpu_identity: str = Field(min_length=1)
+    cc_mode: str = Field(min_length=1)
+    measurement: str = Field(min_length=1)
+    attestation_verifier: str = Field(min_length=1)
+    attested_at: datetime
+    valid_until: datetime
+    max_attestation_age_seconds: int = Field(gt=0)
+    model_digest: str | None = Field(
+        default=None, pattern=r"^sha256:[0-9a-f]{64}$"
+    )
+    workload_digest: str | None = Field(
+        default=None, pattern=r"^sha256:[0-9a-f]{64}$"
+    )
+    verification_status: Literal["VERIFIED"] = "VERIFIED"
+    confidentiality_protected: Literal[True] = True
+    integrity_protected: Literal[True] = True
+    isolation_enforced: Literal[True] = True
+    authority_effect: Literal["NO_AUTHORITY_CREATION"] = "NO_AUTHORITY_CREATION"
+    can_issue_clearance: Literal[False] = False
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    @model_validator(mode="after")
+    def validate_lifecycle(self) -> ConfidentialExecutionBinding:
+        if self.attested_at.utcoffset() is None or self.valid_until.utcoffset() is None:
+            raise ValueError("attestation timestamps must be timezone-aware")
+        if self.valid_until <= self.attested_at:
+            raise ValueError("attestation valid_until must be after attested_at")
+        return self
+
+    @property
+    def binding_digest(self) -> str:
+        return "sha256:" + canonical_digest(self.model_dump(mode="json"))
+
+    @property
+    def fresh_until(self) -> datetime:
+        age_limit = self.attested_at + timedelta(
+            seconds=self.max_attestation_age_seconds
+        )
+        return min(self.valid_until, age_limit)
+
+    def is_fresh(self, now: datetime | None = None) -> bool:
+        now = now or utcnow()
+        return (
+            self.verification_status == "VERIFIED"
+            and self.confidentiality_protected is True
+            and self.integrity_protected is True
+            and self.isolation_enforced is True
+            and self.attested_at <= now < self.fresh_until
+        )
+
+
 class GovernedWorkspaceLineage(BaseModel):
     tenant_id: str = Field(min_length=1)
     work_unit_id: str = Field(min_length=1)
@@ -105,6 +172,7 @@ class GovernedWorkspaceLineage(BaseModel):
     dependency_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
     workspace_binding_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
     kernel_context_digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    execution_substrate_binding: ConfidentialExecutionBinding | None = None
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     @model_validator(mode="after")
@@ -113,6 +181,11 @@ class GovernedWorkspaceLineage(BaseModel):
             raise ValueError("workspace_expires_at must be timezone-aware")
         if self.conformed_at.utcoffset() is None:
             raise ValueError("conformed_at must be timezone-aware")
+        substrate = self.execution_substrate_binding
+        if substrate is not None and not substrate.is_fresh(self.conformed_at):
+            raise ValueError(
+                "confidential execution substrate must be verified and fresh at conformance"
+            )
         return self
 
     def is_active(self, now: datetime | None = None) -> bool:
@@ -122,6 +195,11 @@ class GovernedWorkspaceLineage(BaseModel):
     @property
     def binding_pair(self) -> tuple[str, str]:
         return self.workspace_binding_digest, self.kernel_context_digest
+
+    @property
+    def execution_substrate_digest(self) -> str | None:
+        binding = self.execution_substrate_binding
+        return binding.binding_digest if binding is not None else None
 
 
 class ActionEnvelope(BaseModel):
@@ -147,13 +225,21 @@ class ActionEnvelope(BaseModel):
 
     @property
     def skill_binding_digest(self) -> str | None:
-        return self.skill_context.binding_digest if self.skill_context is not None else None
+        return (
+            self.skill_context.binding_digest if self.skill_context is not None else None
+        )
 
     @property
     def workspace_binding_pair(self) -> tuple[str, str] | None:
         if self.workspace_binding is None:
             return None
         return self.workspace_binding.binding_pair
+
+    @property
+    def execution_substrate_digest(self) -> str | None:
+        if self.workspace_binding is None:
+            return None
+        return self.workspace_binding.execution_substrate_digest
 
 
 class DecisionContract(BaseModel):
@@ -181,6 +267,9 @@ class Clearance(BaseModel):
     kernel_context_digest: str | None = Field(
         default=None, pattern=r"^sha256:[0-9a-f]{64}$"
     )
+    execution_substrate_digest: str | None = Field(
+        default=None, pattern=r"^sha256:[0-9a-f]{64}$"
+    )
     evidence_refs: list[str] = Field(default_factory=list)
     policy_refs: list[str] = Field(default_factory=list)
     receipt_chain_hash: str | None = None
@@ -194,11 +283,21 @@ class Clearance(BaseModel):
             raise ValueError(
                 "workspace_binding_digest and kernel_context_digest must be bound together"
             )
+        if (
+            self.execution_substrate_digest is not None
+            and self.workspace_binding_digest is None
+        ):
+            raise ValueError(
+                "execution_substrate_digest requires governed workspace binding"
+            )
         return self
 
     def authorizes_permit(self, now: datetime | None = None) -> bool:
         now = now or utcnow()
-        return self.decision_contract.decision in {Decision.ALLOW, Decision.MODIFY} and now < self.valid_until
+        return (
+            self.decision_contract.decision in {Decision.ALLOW, Decision.MODIFY}
+            and now < self.valid_until
+        )
 
     @property
     def workspace_binding_pair(self) -> tuple[str, str] | None:
@@ -218,6 +317,9 @@ class ExecutionPermit(BaseModel):
         default=None, pattern=r"^sha256:[0-9a-f]{64}$"
     )
     kernel_context_digest: str | None = Field(
+        default=None, pattern=r"^sha256:[0-9a-f]{64}$"
+    )
+    execution_substrate_digest: str | None = Field(
         default=None, pattern=r"^sha256:[0-9a-f]{64}$"
     )
     clearance_digest: str | None = Field(
@@ -241,6 +343,13 @@ class ExecutionPermit(BaseModel):
             )
         if self.workspace_binding_digest is not None and self.clearance_digest is None:
             raise ValueError("governed workspace permit requires clearance_digest")
+        if (
+            self.execution_substrate_digest is not None
+            and self.workspace_binding_digest is None
+        ):
+            raise ValueError(
+                "execution_substrate_digest requires governed workspace binding"
+            )
         return self
 
     @property
@@ -257,7 +366,9 @@ class ExecutionPermit(BaseModel):
     def consume(self, now: datetime | None = None) -> ExecutionPermit:
         now = now or utcnow()
         if not self.is_usable(now):
-            raise ValueError("execution permit is expired, not yet active, or already consumed")
+            raise ValueError(
+                "execution permit is expired, not yet active, or already consumed"
+            )
         return self.model_copy(update={"consumed_at": now})
 
 
@@ -286,6 +397,9 @@ class ExecutionReceipt(BaseModel):
     kernel_context_digest: str | None = Field(
         default=None, pattern=r"^sha256:[0-9a-f]{64}$"
     )
+    execution_substrate_digest: str | None = Field(
+        default=None, pattern=r"^sha256:[0-9a-f]{64}$"
+    )
     clearance_digest: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
@@ -301,6 +415,13 @@ class ExecutionReceipt(BaseModel):
             )
         if self.workspace_binding_digest is not None and self.clearance_digest is None:
             raise ValueError("governed workspace receipt requires clearance_digest")
+        if (
+            self.execution_substrate_digest is not None
+            and self.workspace_binding_digest is None
+        ):
+            raise ValueError(
+                "execution_substrate_digest requires governed workspace binding"
+            )
         return self
 
     @property
@@ -311,6 +432,7 @@ class ExecutionReceipt(BaseModel):
         for optional_binding in (
             "workspace_binding_digest",
             "kernel_context_digest",
+            "execution_substrate_digest",
             "clearance_digest",
         ):
             if payload[optional_binding] is None:
@@ -318,9 +440,14 @@ class ExecutionReceipt(BaseModel):
         return canonical_digest(payload)
 
 
-def issue_execution_permit(*, clearance: Clearance, authority: AuthorityEnvelope,
-                           action: ActionEnvelope, expires_at: datetime,
-                           now: datetime | None = None) -> ExecutionPermit:
+def issue_execution_permit(
+    *,
+    clearance: Clearance,
+    authority: AuthorityEnvelope,
+    action: ActionEnvelope,
+    expires_at: datetime,
+    now: datetime | None = None,
+) -> ExecutionPermit:
     now = now or utcnow()
     if not authority.is_active(now):
         raise ValueError("authority envelope is inactive or revoked")
@@ -334,10 +461,24 @@ def issue_execution_permit(*, clearance: Clearance, authority: AuthorityEnvelope
         raise ValueError("clearance skill binding mismatch")
     if clearance.workspace_binding_pair != action.workspace_binding_pair:
         raise ValueError("clearance workspace binding mismatch")
+    if clearance.execution_substrate_digest != action.execution_substrate_digest:
+        raise ValueError("clearance execution substrate binding mismatch")
     if action.workspace_binding is not None and not action.workspace_binding.is_active(now):
         raise ValueError("governed workspace is expired at permit issuance")
+    substrate = (
+        action.workspace_binding.execution_substrate_binding
+        if action.workspace_binding is not None
+        else None
+    )
+    if substrate is not None and not substrate.is_fresh(now):
+        raise ValueError(
+            "confidential execution substrate is not verified and fresh at permit issuance"
+        )
     contract = clearance.decision_contract
-    if contract.principal_id != authority.principal_id or contract.actor_id != authority.actor_id:
+    if (
+        contract.principal_id != authority.principal_id
+        or contract.actor_id != authority.actor_id
+    ):
         raise ValueError("decision contract identity binding mismatch")
     if contract.action_type != action.action_type or contract.target != action.target:
         raise ValueError("decision contract action binding mismatch")
@@ -350,6 +491,8 @@ def issue_execution_permit(*, clearance: Clearance, authority: AuthorityEnvelope
         and expires_at > action.workspace_binding.workspace_expires_at
     ):
         raise ValueError("permit cannot outlive governed workspace")
+    if substrate is not None and expires_at > substrate.fresh_until:
+        raise ValueError("permit cannot outlive confidential execution freshness")
     clearance_digest = None
     if action.workspace_binding is not None:
         clearance_digest = canonical_digest(clearance.model_dump(mode="json"))
@@ -368,6 +511,7 @@ def issue_execution_permit(*, clearance: Clearance, authority: AuthorityEnvelope
             if action.workspace_binding is not None
             else None
         ),
+        execution_substrate_digest=action.execution_substrate_digest,
         clearance_digest=clearance_digest,
         issued_at=now,
         expires_at=expires_at,

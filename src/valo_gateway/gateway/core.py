@@ -110,6 +110,7 @@ class ValoGateway:
                 skill_binding_digest=consumed.skill_binding_digest,
                 workspace_binding_digest=consumed.workspace_binding_digest,
                 kernel_context_digest=consumed.kernel_context_digest,
+                execution_substrate_digest=consumed.execution_substrate_digest,
                 clearance_digest=consumed.clearance_digest,
             )
             return ToolExecutionResult(
@@ -134,6 +135,7 @@ class ValoGateway:
                 skill_binding_digest=consumed.skill_binding_digest,
                 workspace_binding_digest=consumed.workspace_binding_digest,
                 kernel_context_digest=consumed.kernel_context_digest,
+                execution_substrate_digest=consumed.execution_substrate_digest,
                 clearance_digest=consumed.clearance_digest,
             )
             return ToolExecutionResult(
@@ -152,7 +154,9 @@ class ValoGateway:
         now: datetime,
     ) -> None:
         if not authority.is_active(now):
-            raise ValueError("authority envelope is inactive or revoked at execution time")
+            raise ValueError(
+                "authority envelope is inactive or revoked at execution time"
+            )
         if not clearance.authorizes_permit(now):
             raise ValueError("clearance is no longer valid at execution time")
         if (
@@ -160,6 +164,16 @@ class ValoGateway:
             and not action.workspace_binding.is_active(now)
         ):
             raise ValueError("governed workspace is expired at execution time")
+        substrate = (
+            action.workspace_binding.execution_substrate_binding
+            if action.workspace_binding is not None
+            else None
+        )
+        if substrate is not None and not substrate.is_fresh(now):
+            raise ValueError(
+                "confidential execution substrate is stale, expired, or unverified "
+                "at execution time"
+            )
         if not permit.is_usable(now):
             raise ValueError(
                 "execution permit is expired, not yet active, or already consumed"
@@ -184,6 +198,10 @@ class ValoGateway:
             raise ValueError("clearance workspace binding mismatch")
         if permit.workspace_binding_pair != action.workspace_binding_pair:
             raise ValueError("permit workspace binding mismatch")
+        if clearance.execution_substrate_digest != action.execution_substrate_digest:
+            raise ValueError("clearance execution substrate binding mismatch")
+        if permit.execution_substrate_digest != action.execution_substrate_digest:
+            raise ValueError("permit execution substrate binding mismatch")
         expected_clearance_digest = None
         if action.workspace_binding is not None:
             expected_clearance_digest = canonical_digest(

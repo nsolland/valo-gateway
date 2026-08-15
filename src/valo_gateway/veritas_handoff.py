@@ -50,6 +50,12 @@ def build_veritas_execution_observation(
         receipt.kernel_context_digest,
     ) != (consumed.workspace_binding_digest, consumed.kernel_context_digest):
         raise ValueError("receipt workspace binding mismatch")
+    if clearance.execution_substrate_digest != action.execution_substrate_digest:
+        raise ValueError("clearance execution substrate binding mismatch")
+    if consumed.execution_substrate_digest != action.execution_substrate_digest:
+        raise ValueError("consumed permit execution substrate binding mismatch")
+    if receipt.execution_substrate_digest != action.execution_substrate_digest:
+        raise ValueError("receipt execution substrate binding mismatch")
     expected_clearance_digest = None
     if action.workspace_binding is not None:
         expected_clearance_digest = canonical_digest(clearance.model_dump(mode="json"))
@@ -82,10 +88,20 @@ def build_veritas_execution_observation(
     if action.workspace_binding is not None:
         payload.update(
             {
-                "workspace_binding": action.workspace_binding.model_dump(mode="json"),
+                "workspace_binding": action.workspace_binding.model_dump(
+                    mode="json", exclude={"execution_substrate_binding"}
+                ),
                 "workspace_binding_digest": consumed.workspace_binding_digest,
                 "kernel_context_digest": consumed.kernel_context_digest,
             }
         )
+        substrate = action.workspace_binding.execution_substrate_binding
+        if substrate is not None:
+            payload.update(
+                {
+                    "execution_substrate_binding": substrate.model_dump(mode="json"),
+                    "execution_substrate_digest": consumed.execution_substrate_digest,
+                }
+            )
     payload["observation_digest"] = "sha256:" + canonical_digest(payload)
     return payload
