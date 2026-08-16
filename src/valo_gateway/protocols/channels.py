@@ -14,6 +14,11 @@ class ChannelKind(str, Enum):
     TEAMS = "teams"
     GOOGLE_CHAT = "google_chat"
     DISCORD = "discord"
+    EMAIL = "email"
+    SMS = "sms"
+    MMS = "mms"
+    VOICE = "voice"
+    IMESSAGE = "imessage"
     OTHER = "other"
 
 
@@ -22,6 +27,7 @@ class ChannelInteraction(str, Enum):
     COMMAND = "command"
     APPROVAL = "approval"
     FORM_SUBMISSION = "form_submission"
+    CALL = "call"
 
 
 _FORBIDDEN_AUTHORITY_KEYS = {
@@ -56,8 +62,10 @@ class ChannelEventEvidence(BaseModel):
     actor_id: str
     interaction: ChannelInteraction
     observed_at: datetime
+    agent_identity_id: str | None = None
     thread_id: str | None = None
     correlation_ref: str | None = None
+    transport_verified: bool = False
     payload: dict[str, Any] = Field(default_factory=dict)
     authority_effect: Literal["none"] = "none"
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -73,6 +81,13 @@ class ChannelEventEvidence(BaseModel):
     def require_identity(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("channel evidence identities must be non-empty")
+        return value
+
+    @field_validator("agent_identity_id")
+    @classmethod
+    def require_agent_identity(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("agent identity must be non-empty when present")
         return value
 
     @field_validator("payload")
@@ -92,7 +107,7 @@ class ChannelEventEvidence(BaseModel):
 
 
 class ChannelEvidenceNormalizer:
-    """Normalize collaboration-channel events into non-authoritative evidence."""
+    """Normalize collaboration and communication events into non-authoritative evidence."""
 
     protocol = "channel-evidence"
 
