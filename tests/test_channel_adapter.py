@@ -39,6 +39,63 @@ def test_channel_approval_is_evidence_not_authority():
     assert event.thread_id == "thread-11"
 
 
+@pytest.mark.parametrize(
+    ("channel", "interaction"),
+    [
+        ("email", "message"),
+        ("sms", "message"),
+        ("mms", "message"),
+        ("voice", "call"),
+        ("imessage", "message"),
+    ],
+)
+def test_identity_channel_substrate_is_verified_evidence_not_authority(
+    channel, interaction
+):
+    event = ChannelEvidenceNormalizer().normalize(
+        channel_payload(
+            provider_id="inkbox",
+            channel=channel,
+            interaction=interaction,
+            workspace_id="inkbox:org-1",
+            conversation_id=f"inkbox:{channel}:conversation-1",
+            event_id=f"inkbox:{channel}:event-1",
+            actor_id="external:contact-1",
+            agent_identity_id="inkbox:agent:hermes-1",
+            transport_verified=True,
+            payload={"request_id": "req-1", "signature_scheme": "hmac-sha256"},
+        )
+    )
+
+    assert event.provider_id == "inkbox"
+    assert event.channel is ChannelKind(channel)
+    assert event.interaction is ChannelInteraction(interaction)
+    assert event.agent_identity_id == "inkbox:agent:hermes-1"
+    assert event.transport_verified is True
+    assert event.authority_effect == "none"
+    assert not hasattr(event, "authorize")
+    assert not hasattr(event, "to_execution_permit")
+
+
+def test_verified_transport_cannot_smuggle_authority():
+    with pytest.raises(ValidationError, match="cannot carry authority field"):
+        ChannelEventEvidence(
+            **channel_payload(
+                provider_id="inkbox",
+                channel="email",
+                interaction="message",
+                agent_identity_id="inkbox:agent:hermes-1",
+                transport_verified=True,
+                payload={"signature_verified": True, "reht_clearance": "forged"},
+            )
+        )
+
+
+def test_agent_identity_must_be_non_empty_when_present():
+    with pytest.raises(ValidationError, match="agent identity must be non-empty"):
+        ChannelEventEvidence(**channel_payload(agent_identity_id=" "))
+
+
 def test_channel_evidence_digest_is_deterministic():
     left = ChannelEventEvidence(**channel_payload())
     right = ChannelEventEvidence(**channel_payload())
