@@ -86,6 +86,48 @@ def test_replay_is_rejected() -> None:
         verifier.accept(**kwargs)
 
 
+def test_replay_claim_is_retained_through_last_valid_instant() -> None:
+    now = datetime.now(UTC)
+    payload, envelope = _sign(now=now)
+    verifier = GovernedMessageVerifier(replay_store=InMemoryReplayStore())
+    verifier.accept(
+        envelope=envelope,
+        payload=payload,
+        verifier=_auth(),
+        expected_recipient_id="agent:writer",
+        now=now + timedelta(seconds=1),
+    )
+    with pytest.raises(ValueError, match="replay detected"):
+        verifier.accept(
+            envelope=envelope,
+            payload=payload,
+            verifier=_auth(),
+            expected_recipient_id="agent:writer",
+            now=envelope.expires_at - timedelta(microseconds=1),
+        )
+
+
+def test_exact_expiry_fails_closed_before_replay_acceptance() -> None:
+    now = datetime.now(UTC)
+    payload, envelope = _sign(now=now)
+    verifier = GovernedMessageVerifier(replay_store=InMemoryReplayStore())
+    verifier.accept(
+        envelope=envelope,
+        payload=payload,
+        verifier=_auth(),
+        expected_recipient_id="agent:writer",
+        now=now + timedelta(seconds=1),
+    )
+    with pytest.raises(ValueError, match="message is expired"):
+        verifier.accept(
+            envelope=envelope,
+            payload=payload,
+            verifier=_auth(),
+            expected_recipient_id="agent:writer",
+            now=envelope.expires_at,
+        )
+
+
 def test_payload_and_signature_tampering_are_rejected() -> None:
     now = datetime.now(UTC)
     payload, envelope = _sign(now=now)
