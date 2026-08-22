@@ -21,10 +21,14 @@ def test_registry_get_missing_rejected():
         reg.get("missing")
 
 
-def test_registry_invoke_with_arguments():
+def test_registry_returns_opaque_non_invocable_handle():
     reg = ToolRegistry()
-    reg.register(FunctionTool("add", lambda a, b: a + b))
-    assert reg.get("add").invoke({"a": 1, "b": 2}) == 3
+    tool = FunctionTool("add", lambda a, b: a + b)
+    handle = reg.register(tool, capability="math.add", target="sum:1")
+    assert reg.get("add") == handle
+    assert not hasattr(handle, "invoke")
+    with pytest.raises(PermissionError, match="NO_DIRECT_EFFECT_PATH"):
+        tool.invoke({"a": 1, "b": 2})
 
 
 def test_tool_capabilities_exposed():

@@ -8,11 +8,15 @@ from pydantic import BaseModel, ConfigDict
 from valo_gateway.contracts import (
     ActionEnvelope,
     AuthorityEnvelope,
+    BoundaryReplayInput,
+    BoundaryReplayResult,
     Clearance,
     ExecutionPermit,
     ExecutionReceipt,
     ExecutionStatus,
+    GovernanceBasisState,
     canonical_digest,
+    replay_effect_boundary,
 )
 from valo_gateway.contracts.models import utcnow
 from valo_gateway.resource_budget import (
@@ -21,6 +25,8 @@ from valo_gateway.resource_budget import (
     ResourceReservation,
     required_resource_budget_ids,
 )
+from valo_gateway.tool_adapters import EffectorHandle, ToolRegistry
+from valo_gateway.tool_adapters.base import _invoke_tool_from_boundary
 
 from .control import RuntimeControlPlane
 
@@ -32,6 +38,7 @@ class ExecutableTool(Protocol):
 class ToolExecutionResult(BaseModel):
     consumed_permit: ExecutionPermit
     receipt: ExecutionReceipt
+    boundary_replay: BoundaryReplayResult
     consumed_resources: tuple[ConsumedResourceReservation, ...] = ()
     response: Any | None = None
     error: str | None = None
@@ -51,9 +58,12 @@ class ValoGateway:
         permit: ExecutionPermit,
         action: ActionEnvelope,
         executor_id: str,
-        tool: ExecutableTool,
+        tool: ExecutableTool | None = None,
+        effector_registry: ToolRegistry | None = None,
+        effector_handle: EffectorHandle | None = None,
         arguments: dict[str, Any] | None = None,
         now: datetime | None = None,
+        boundary_replay: BoundaryReplayInput | None = None,
         previous_receipt_hash: str | None = None,
         control_plane: RuntimeControlPlane | None = None,
         control_scopes: list[str] | None = None,
@@ -61,9 +71,49 @@ class ValoGateway:
         resource_reservations: tuple[ResourceReservation, ...] = (),
     ) -> ToolExecutionResult:
         now = now or utcnow()
+        registry_path = effector_registry is not None or effector_handle is not None
+        if tool is None and not registry_path:
+            raise ValueError("governed execution requires one effector path")
+        if tool is not None and registry_path:
+            raise ValueError("governed execution permits exactly one effector path")
+        if registry_path and (
+            effector_registry is None or effector_handle is None
+        ):
+            raise ValueError("effector registry and handle must be bound together")
+        if tool is not None and not callable(
+            getattr(tool, "_invoke_from_boundary", None)
+        ):
+            raise PermissionError(
+                "NO_DIRECT_EFFECT_PATH: effector lacks boundary-only dispatch"
+            )
         if permit.permit_id in self._consumed_permits:
             raise ValueError("execution permit is already consumed")
         self._validate_binding(authority, clearance, permit, action, now)
+        replay_input = boundary_replay or BoundaryReplayInput.capture(
+            authority=authority,
+            clearance=clearance,
+            permit=permit,
+            action=action,
+            governance_basis_state=GovernanceBasisState.VALID,
+            evaluated_at=now,
+        )
+        replay_result = replay_effect_boundary(
+            replay_input,
+            authority=authority,
+            clearance=clearance,
+            permit=permit,
+            action=action,
+        )
+        if not replay_result.effect_allowed:
+            raise ValueError(
+                "structural coupling blocked effect: " + replay_result.reason
+            )
+        if effector_registry is not None and effector_handle is not None:
+            effector_registry.assert_effect_binding(
+                effector_handle,
+                action_type=action.action_type,
+                target=action.target,
+            )
         active = control_plane or self._control_plane
         if active:
             active.assert_execution_allowed(
@@ -96,7 +146,20 @@ class ValoGateway:
         consumed = permit.consume(now)
         self._consumed_permits.add(permit.permit_id)
         try:
-            response = tool.invoke(arguments or {})
+            if effector_registry is not None and effector_handle is not None:
+                response = effector_registry._invoke_from_boundary(
+                    effector_handle,
+                    arguments or {},
+                    replay_result,
+                    action_type=action.action_type,
+                    target=action.target,
+                )
+            else:
+                response = _invoke_tool_from_boundary(
+                    tool,
+                    arguments or {},
+                    replay_result,
+                )
             receipt = ExecutionReceipt(
                 permit_id=consumed.permit_id,
                 clearance_id=clearance.clearance_id,
@@ -112,10 +175,12 @@ class ValoGateway:
                 kernel_context_digest=consumed.kernel_context_digest,
                 execution_substrate_digest=consumed.execution_substrate_digest,
                 clearance_digest=consumed.clearance_digest,
+                boundary_replay_digest=replay_result.result_digest,
             )
             return ToolExecutionResult(
                 consumed_permit=consumed,
                 receipt=receipt,
+                boundary_replay=replay_result,
                 consumed_resources=consumed_resources,
                 response=response,
             )
@@ -137,10 +202,12 @@ class ValoGateway:
                 kernel_context_digest=consumed.kernel_context_digest,
                 execution_substrate_digest=consumed.execution_substrate_digest,
                 clearance_digest=consumed.clearance_digest,
+                boundary_replay_digest=replay_result.result_digest,
             )
             return ToolExecutionResult(
                 consumed_permit=consumed,
                 receipt=receipt,
+                boundary_replay=replay_result,
                 consumed_resources=consumed_resources,
                 error=f"{type(exc).__name__}: {exc}",
             )
@@ -180,6 +247,10 @@ class ValoGateway:
             )
         if action.authority_envelope_id != authority.envelope_id:
             raise ValueError("action authority binding mismatch")
+        if action.action_type not in authority.capability_grants:
+            raise ValueError("action capability is outside authority grant")
+        if action.target not in authority.resource_scope:
+            raise ValueError("action target is outside authority scope")
         if clearance.authority_envelope_id != authority.envelope_id:
             raise ValueError("clearance authority binding mismatch")
         if permit.authority_envelope_id != authority.envelope_id:

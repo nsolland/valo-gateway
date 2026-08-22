@@ -63,6 +63,10 @@ def build_veritas_execution_observation(
         raise ValueError("consumed permit clearance digest mismatch")
     if receipt.clearance_digest != expected_clearance_digest:
         raise ValueError("receipt clearance digest mismatch")
+    if result.boundary_replay.result_digest != result.boundary_replay.computed_digest:
+        raise ValueError("boundary replay result is unsealed")
+    if receipt.boundary_replay_digest != result.boundary_replay.result_digest:
+        raise ValueError("receipt boundary replay binding mismatch")
 
     payload: dict[str, Any] = {
         "schema": _SCHEMA,
@@ -81,6 +85,7 @@ def build_veritas_execution_observation(
         "status": receipt.status.value,
         "response_digest": receipt.response_digest,
         "receipt_hash": receipt.receipt_hash,
+        "boundary_replay_digest": receipt.boundary_replay_digest,
         "previous_receipt_hash": receipt.previous_receipt_hash,
         "skill_binding_digest": receipt.skill_binding_digest,
         "authority_granted": False,

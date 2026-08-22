@@ -403,6 +403,9 @@ class ExecutionReceipt(BaseModel):
     clearance_digest: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
+    boundary_replay_digest: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     @model_validator(mode="after")
@@ -434,6 +437,7 @@ class ExecutionReceipt(BaseModel):
             "kernel_context_digest",
             "execution_substrate_digest",
             "clearance_digest",
+            "boundary_replay_digest",
         ):
             if payload[optional_binding] is None:
                 payload.pop(optional_binding)
@@ -455,6 +459,10 @@ def issue_execution_permit(
         raise ValueError("clearance authority binding mismatch")
     if action.authority_envelope_id != authority.envelope_id:
         raise ValueError("action authority binding mismatch")
+    if action.action_type not in authority.capability_grants:
+        raise ValueError("action capability is outside authority grant")
+    if action.target not in authority.resource_scope:
+        raise ValueError("action target is outside authority scope")
     if clearance.action_digest != action.digest:
         raise ValueError("clearance action binding mismatch")
     if clearance.skill_binding_digest != action.skill_binding_digest:

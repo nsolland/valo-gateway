@@ -65,7 +65,7 @@ def governed_fixture():
     return now, authority, action, clearance, permit
 
 
-def test_cloudflare_adapter_is_browser_cdp_execution_substrate():
+def test_cloudflare_adapter_builds_browser_cdp_invocation_without_dispatch():
     seen = []
     context = CloudflareBrowserContext(
         account_ref="cloudflare-account:primary",
@@ -79,17 +79,21 @@ def test_cloudflare_adapter_is_browser_cdp_execution_substrate():
         dispatcher=lambda invocation: seen.append(invocation) or {"ok": True},
     )
 
-    result = adapter.invoke({"operation": "navigate", "url": "https://example.com"})
+    invocation = adapter.build_invocation(
+        {"operation": "navigate", "url": "https://example.com"}
+    )
 
-    assert result == {"ok": True}
-    assert len(seen) == 1
-    invocation = seen[0]
+    assert seen == []
     assert invocation.protocol is ExecutionProtocol.CDP
     assert invocation.mode is ExecutionMode.BROWSER
     assert invocation.payload["provider"] == "cloudflare-browser-run"
     assert invocation.payload["browser_context"]["backend"] == "kitesurf"
     assert invocation.payload["browser_context"]["authority_effect"] == "none"
     assert invocation.payload["arguments"]["operation"] == "navigate"
+
+    with pytest.raises(PermissionError, match="NO_DIRECT_EFFECT_PATH"):
+        adapter.invoke({"operation": "navigate", "url": "https://example.com"})
+    assert seen == []
 
 
 @pytest.mark.parametrize(
@@ -113,7 +117,7 @@ def test_cloudflare_payload_rejects_authority_injection(authority_field):
     )
 
     with pytest.raises(ValueError, match="cannot carry authority field"):
-        adapter.invoke({"nested": {authority_field: "forged"}})
+        adapter.build_invocation({"nested": {authority_field: "forged"}})
 
 
 def test_cloudflare_operational_state_is_non_authoritative():

@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 
 from .execution import (
     ExecutionDispatcher,
+    ExecutionInvocation,
     ExecutionMode,
     ExecutionProtocol,
     ExecutionTransportContext,
@@ -99,11 +100,11 @@ class CloudflareBrowserRunAdapter(RuntimeAgnosticExecutionAdapter):
             dispatcher=dispatcher,
         )
 
-    def invoke(self, arguments: dict[str, Any]) -> Any:
+    def build_invocation(self, arguments: dict[str, Any]) -> ExecutionInvocation:
         _reject_authority_claims(arguments)
         payload = {
             "provider": self.substrate,
             "browser_context": self.context.model_dump(mode="json"),
             "arguments": dict(arguments),
         }
-        return super().invoke(payload)
+        return super().build_invocation(payload)

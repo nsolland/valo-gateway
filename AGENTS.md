@@ -16,6 +16,17 @@ proposal -> VAIG evidence -> REHT clearance + execution permit
 
 ## Non-negotiable invariants
 
+- **NO_DIRECT_EFFECT_PATH.** Every consequence-bearing tool or effect crosses
+  this governed enforcement boundary. Decision-relevant state and memory writes
+  are effects. Direct tool invocation is rejected; live credentials and
+  executable capabilities remain exclusive to the effector path.
+- **NULL_EFFECT_ON_DENY.** `DENY`, `DEFER`, `STEP_UP` and `HALT` produce no
+  invocation, resource consumption or external effect.
+- **Structural coupling.** Invalid, stale, revoked, suspended or unresolved
+  governance basis blocks before permit consumption and invocation.
+- **Deterministic boundary replay.** Replay pins the exact contract, state,
+  authority, evidence and decision inputs and never re-executes the effect.
+  Token-level LLM replay is outside this boundary and is not attempted.
 - **Fail closed** on any missing or mismatched binding: authority, clearance,
   permit, action digest, authority envelope id, or clearance id. No exception.
 - **Only `ALLOW` or already-materialized `MODIFY`** may issue an execution permit.
@@ -101,14 +112,15 @@ CI (`.github/workflows/ci.yml`) runs compileall + pytest on every push/PR.
   consumed permit, clearance/action/permit binding mismatches.
 - Replay is tested by proving the tool is NOT invoked on a consumed permit.
 - HALT/revocation is tested by proving the permit is NOT consumed when blocked.
-- MODIFY decision path issues a permit; DENY/DEFER/HALT never do.
+- MODIFY decision path issues a permit; DENY/DEFER/STEP_UP/HALT never do.
 - Runtime adapters satisfy the adapter contract (submit → stream → checkpoint
   → result) across all backends.
 - Ingress normalizers (MCP/A2A/HTTP/gRPC/ext_authz) only normalize; a policy
   field in ingress is ignored or rejected, never interpreted.
 - The SDK composition path (ingress → harness → gateway → receipt) is covered.
-- Conformance tests prove non-bypass: plugins cannot create authority, and a
-  permit is one-shot end-to-end.
+- Conformance tests prove no direct effect path, null effect on non-ALLOW,
+  structural coupling, effector-exclusive access, pinned deterministic replay,
+  plugin non-authority and one-shot permits end-to-end.
 - Agent Skill tests prove the binding propagates action → clearance → permit →
   receipt, mismatches fail before invocation, and skill capabilities never
   override missing, revoked or expired authority.

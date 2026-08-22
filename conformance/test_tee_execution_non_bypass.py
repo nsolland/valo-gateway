@@ -67,6 +67,8 @@ def _chain():
         issuer="issuer",
         issued_at=now - timedelta(seconds=2),
         valid_until=now + timedelta(minutes=5),
+        capability_grants=["compute"],
+        resource_scope=["job"],
     )
     action = ActionEnvelope(
         action_type="compute",

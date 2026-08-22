@@ -64,7 +64,7 @@ def governed_fixture():
     return now, authority, action, clearance, permit
 
 
-def test_adapter_dispatches_protocol_neutral_invocation():
+def test_adapter_builds_protocol_neutral_invocation_without_dispatch():
     seen = []
     transport = ExecutionTransportContext(
         execution_context_hash="sha256:context",
@@ -80,16 +80,18 @@ def test_adapter_dispatches_protocol_neutral_invocation():
         dispatcher=lambda invocation: seen.append(invocation) or {"ok": True},
     )
 
-    result = adapter.invoke({"query": "status"})
+    invocation = adapter.build_invocation({"query": "status"})
 
-    assert result == {"ok": True}
-    assert len(seen) == 1
-    invocation = seen[0]
+    assert seen == []
     assert invocation.protocol is ExecutionProtocol.MCP
     assert invocation.mode is ExecutionMode.TOOL
     assert invocation.payload == {"query": "status"}
     assert invocation.transport.substrate_grant_ref == "grant:opaque"
     assert invocation.transport.resume_checkpoint_ref == "cp:17"
+
+    with pytest.raises(PermissionError, match="NO_DIRECT_EFFECT_PATH"):
+        adapter.invoke({"query": "status"})
+    assert seen == []
 
 
 @pytest.mark.parametrize(
@@ -161,4 +163,6 @@ def test_same_adapter_contract_covers_adk_mcp_and_a2a():
             transport=ExecutionTransportContext(execution_context_hash="sha256:ctx"),
             dispatcher=lambda invocation: invocation.protocol.value,
         )
-        assert adapter.invoke({}) == protocol.value
+        assert adapter.build_invocation({}).protocol is protocol
+        with pytest.raises(PermissionError, match="NO_DIRECT_EFFECT_PATH"):
+            adapter.invoke({})

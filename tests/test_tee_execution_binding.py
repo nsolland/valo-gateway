@@ -262,6 +262,8 @@ def test_permit_cannot_outlive_tee_freshness_window():
         issuer="valo",
         issued_at=now - timedelta(seconds=1),
         valid_until=now + timedelta(minutes=5),
+        capability_grants=["compute.run"],
+        resource_scope=["job:tee"],
     )
     action = ActionEnvelope(
         action_type="compute.run",

@@ -6,6 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from valo_gateway.tool_adapters.base import BoundaryProof, _validate_boundary_proof
+
 
 class ExecutionProtocol(str, Enum):
     ADK = "adk"
@@ -78,12 +80,24 @@ class RuntimeAgnosticExecutionAdapter:
         self.transport = transport
         self._dispatcher = dispatcher
 
-    def invoke(self, arguments: dict[str, Any]) -> Any:
-        invocation = ExecutionInvocation(
+    def build_invocation(self, arguments: dict[str, Any]) -> ExecutionInvocation:
+        return ExecutionInvocation(
             protocol=self.protocol,
             mode=self.mode,
             target=self.target,
             payload=arguments,
             transport=self.transport,
         )
-        return self._dispatcher(invocation)
+
+    def invoke(self, arguments: dict[str, Any]) -> Any:
+        raise PermissionError(
+            "NO_DIRECT_EFFECT_PATH: use ValoGateway governed enforcement"
+        )
+
+    def _invoke_from_boundary(
+        self,
+        arguments: dict[str, Any],
+        proof: BoundaryProof,
+    ) -> Any:
+        _validate_boundary_proof(proof)
+        return self._dispatcher(self.build_invocation(arguments))

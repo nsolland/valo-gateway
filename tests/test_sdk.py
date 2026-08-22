@@ -17,7 +17,11 @@ def build_sdk():
     ingress = MCPIngress()
     router = HarnessRouter({"local": LocalRuntime()}, default="local")
     tools = ToolRegistry()
-    tools.register(FunctionTool("payments", lambda amount: {"accepted": True, "amount": amount}))
+    tools.register(
+        FunctionTool("payments", lambda amount: {"accepted": True, "amount": amount}),
+        capability="payment.submit",
+        target="invoice:123",
+    )
     sdk = GatewaySDK.compose(ingress=ingress, harness=router, tools=tools)
     return sdk
 
@@ -29,7 +33,9 @@ def test_sdk_end_to_end_success():
     result = sdk.gateway.execute(
         authority=authority, clearance=clearance, permit=permit,
         action=action, executor_id="tool:payments",
-        tool=sdk.tools.get("payments"), arguments={"amount": 1250}, now=now,
+        effector_registry=sdk.tools,
+        effector_handle=sdk.tools.get("payments"),
+        arguments={"amount": 1250}, now=now,
     )
     assert result.consumed_permit.consumed_at == now
     assert result.receipt.status == ExecutionStatus.SUCCEEDED
