@@ -130,9 +130,6 @@ class ValoGateway:
                 ),
             )
 
-        if not self._permit_store.consume_once(permit.permit_id, now):
-            raise ValueError("execution permit is already consumed")
-
         required_budget_ids = required_resource_budget_ids(action)
         consumed_resources: tuple[ConsumedResourceReservation, ...] = ()
         if required_budget_ids:
@@ -148,6 +145,9 @@ class ValoGateway:
             )
         elif resource_reservations:
             raise ValueError("action does not authorize resource reservations")
+
+        if not self._permit_store.consume_once(permit.permit_id, now):
+            raise ValueError("execution permit is already consumed")
 
         consumed = permit.consume(now)
         try:
