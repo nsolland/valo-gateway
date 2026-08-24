@@ -113,3 +113,19 @@ def test_store_consumes_exactly_once_across_reopened_connections(tmp_path):
 
     assert SQLitePermitConsumptionStore(db).consume_once("permit:1", now) is True
     assert SQLitePermitConsumptionStore(db).consume_once("permit:1", now) is False
+
+
+def test_store_rejects_empty_permit_id(tmp_path):
+    store = SQLitePermitConsumptionStore(tmp_path / "permits.sqlite3")
+    with pytest.raises(ValueError, match="permit_id must be non-empty"):
+        store.consume_once("", datetime.now(UTC))
+
+
+def test_default_store_honors_configured_path(tmp_path, monkeypatch):
+    db = tmp_path / "configured.sqlite3"
+    monkeypatch.setenv(SQLitePermitConsumptionStore.ENV_PATH, str(db))
+
+    store = SQLitePermitConsumptionStore.default()
+
+    assert store.path == db
+    assert store.consume_once("permit:configured", datetime.now(UTC)) is True
