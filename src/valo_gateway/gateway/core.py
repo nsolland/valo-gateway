@@ -29,6 +29,7 @@ from valo_gateway.tool_adapters import EffectorHandle, ToolRegistry
 from valo_gateway.tool_adapters.base import _invoke_tool_from_boundary
 
 from .control import RuntimeControlPlane
+from .permit_consumption import PermitConsumptionStore, SQLitePermitConsumptionStore
 
 
 class ExecutableTool(Protocol):
@@ -46,9 +47,13 @@ class ToolExecutionResult(BaseModel):
 
 
 class ValoGateway:
-    def __init__(self, control_plane: RuntimeControlPlane | None = None) -> None:
+    def __init__(
+        self,
+        control_plane: RuntimeControlPlane | None = None,
+        permit_store: PermitConsumptionStore | None = None,
+    ) -> None:
         self._control_plane = control_plane
-        self._consumed_permits: set[str] = set()
+        self._permit_store = permit_store or SQLitePermitConsumptionStore.default()
 
     def execute(
         self,
@@ -86,8 +91,6 @@ class ValoGateway:
             raise PermissionError(
                 "NO_DIRECT_EFFECT_PATH: effector lacks boundary-only dispatch"
             )
-        if permit.permit_id in self._consumed_permits:
-            raise ValueError("execution permit is already consumed")
         self._validate_binding(authority, clearance, permit, action, now)
         replay_input = boundary_replay or BoundaryReplayInput.capture(
             authority=authority,
@@ -143,8 +146,10 @@ class ValoGateway:
         elif resource_reservations:
             raise ValueError("action does not authorize resource reservations")
 
+        if not self._permit_store.consume_once(permit.permit_id, now):
+            raise ValueError("execution permit is already consumed")
+
         consumed = permit.consume(now)
-        self._consumed_permits.add(permit.permit_id)
         try:
             if effector_registry is not None and effector_handle is not None:
                 response = effector_registry._invoke_from_boundary(
