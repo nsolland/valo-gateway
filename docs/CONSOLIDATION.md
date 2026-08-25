@@ -1,13 +1,5 @@
-# Consolidation status
+# Public consolidation note
 
-This bootstrap is the canonical target for the four runtime/tool repositories and the mechanical gateway code currently inside `valo-platform`.
+Internal source-repository mappings, migration sequencing, private implementation locations, and portfolio consolidation plans are intentionally not published in this public reference repository.
 
-After the repository is renamed to `valo-gateway`:
-
-1. run conformance CI
-2. make `valo-platform` consume `valo-gateway`
-3. remove duplicated gateway implementation from `valo-platform`
-4. replace the four old repositories with archived migration pointers
-5. migrate `valo-mcp` protocol code into `protocols/mcp` after contract review
-
-The old repositories must not be archived until active consumers have moved and the non-bypass suite is green.
+Public provenance for this repository is represented by its own Git history, releases, public contracts, and conformance evidence.
