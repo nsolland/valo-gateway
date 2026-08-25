@@ -34,7 +34,10 @@ def test_mcp_2_server_registers_tools_and_resource_template():
         "get_profile",
         "list_profiles",
     }
-    assert {str(template.uri_template) for template in templates} == {
+    assert {
+        str(getattr(template, "uri_template", getattr(template, "uriTemplate", None)))
+        for template in templates
+    } == {
         "style://{profile_id}"
     }
 

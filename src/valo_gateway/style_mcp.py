@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import json
 
-from mcp.server import MCPServer
+try:
+    from mcp.server.fastmcp import FastMCP as MCPServer
+except ImportError:
+    try:
+        from mcp.server import FastMCP as MCPServer
+    except ImportError:
+        from mcp.server import MCPServer
 
 from .style_profiles import list_style_profiles, load_style_profile, prompt_prefix
 
