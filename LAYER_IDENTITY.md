@@ -1,15 +1,13 @@
-# Layer identity
+# Public boundary identity
 
-`valo-gateway` has no LA identity.
+`valo-gateway` is mechanical enforcement infrastructure. It is not an evaluator, authority source, policy engine, or independent decision maker.
 
-It is mechanical execution infrastructure, not an intelligent, evaluative or authorizing layer.
+## Public role boundaries
 
-Canonical ownership:
+- An upstream governing system supplies the exact authorization or decision binding required by the declared profile.
+- The gateway validates those bindings and mechanically controls the consequence-bearing invocation.
+- A downstream evidence or receipt system may record the attempted or observed result.
 
-- VAIG evaluates and produces evidence/signals. It has no authority.
-- REHT is the sole execution authorization boundary.
-- RACS is immutable decision-contract data. It does not evaluate, authorize or execute.
-- VALO Gateway validates and mechanically enforces an already-issued clearance and permit.
-- Veritas records execution attempts and observable outcomes.
+The public contract does not require publication of any private portfolio layer numbering, component topology, implementation ownership map, or internal orchestration architecture.
 
-Forbidden here: policy creation, authority creation, probabilistic evaluation, admissibility decisions, positive authorization, a second decision engine, or claims that a vendor owns the execution boundary.
+Forbidden here: policy creation, authority creation, probabilistic evaluation, self-authorization, widening an upstream decision, or retaining an independent consequence-bearing bypass path.
