@@ -1,4 +1,0 @@
-{
-  "schema": "public.repository.provenance.v1",
-  "public_note": "Internal source-repository identities, private file mappings, migration branches, and portfolio consolidation details are intentionally not published. Public provenance is the history and release record of this repository."
-}
