@@ -1,9 +1,0 @@
-schema: valo.repo-manifest.v1
-canonical_name: valo-gateway
-current_repository: nsolland/runtime-adapter-gateway
-target_repository: nsolland/valo-gateway
-status: consolidation-staging
-la_identity: null
-authority_boundary: REHT
-responsibility: vendor-neutral mechanical execution enforcement SDK
-branch: feat/bootstrap-gateway-v1
