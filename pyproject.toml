@@ -38,7 +38,7 @@ Security = "https://github.com/nsolland/valo-gateway/blob/main/SECURITY.md"
 packages = ["src/valo_gateway"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = [".", "src"]
 testpaths = ["tests", "conformance"]
 addopts = "-q"
 
