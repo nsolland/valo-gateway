@@ -81,3 +81,19 @@ pytest
 ## License
 
 Apache License 2.0. See `LICENSE`.
+
+
+## Governed adaptive-loop MVP
+
+A runnable end-to-end example demonstrates learned guidance shaping a proposal
+without creating authority, fresh authorization at the consequence boundary,
+one-shot governed execution, effect receipts, and evidence-fed renewal.
+
+```bash
+python -m examples.governed_adaptive_loop.app
+```
+
+The same demo also revokes authority after permit issuance and verifies that the
+effect path remains null at execution time.
+
+See `examples/governed_adaptive_loop/README.md`.
