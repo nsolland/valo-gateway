@@ -71,6 +71,15 @@ See `PUBLICATION_STATUS.md`. The public role is mechanical reference enforcement
 
 Internal source-repository mappings, portfolio topology, migration sequencing and unpublished implementation relationships are intentionally not part of this public surface.
 
+## Consequence Governance reference
+
+The enforcement boundary implemented here is one public surface used in the paper **Consequence Governance: Governing the Transition from Proposed Action to Real-World Effect** (Version 1.0, September 5, 2026).
+
+- Zenodo record: https://zenodo.org/records/22377951
+- Category reference: https://valoresearch.org/consequence-governance.html
+
+The paper defines the broader category and the Governed Effect Path. `valo-gateway` remains the mechanical enforcement layer: it does not create authority, evaluate admissibility or widen an upstream decision.
+
 ## Development
 
 ```bash
