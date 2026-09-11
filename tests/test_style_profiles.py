@@ -10,19 +10,22 @@ def test_reht_profile_is_available():
     profile = load_style_profile("reht-visual")
     assert profile["id"] == "reht-visual"
     assert profile["version"] == "1.2.0"
-    assert profile["naming_rule"].startswith("reht skrives alltid")
+    assert profile["naming_rule"].startswith("reht is always written")
     assert profile["campaign_model"]["sequence"] == [
-        "premiss",
-        "vurdering",
-        "handling",
+        "premise",
+        "assessment",
+        "action",
     ]
-    assert "Generisk KI-reklameestetikk." in profile["forbidden"]
-    assert "Engelske fagord når et presist norsk ord finnes." in profile["forbidden"]
+    assert "Generic AI advertising aesthetics." in profile["forbidden"]
+    assert (
+        "Unnecessary English jargon when communicating to a Norwegian audience and a precise Norwegian term exists."
+        in profile["forbidden"]
+    )
 
 
 def test_mcp_profile_tools_return_canonical_profile():
     assert "reht-visual" in list_profiles()
-    assert get_profile()["editorial_test"].startswith("Hvis bildet kunne vært brukt")
+    assert get_profile()["editorial_test"].startswith("If the image could be used")
 
 
 def test_mcp_2_server_registers_tools_and_resource_template():
@@ -43,9 +46,9 @@ def test_mcp_2_server_registers_tools_and_resource_template():
 
 
 def test_apply_profile_binds_contract_before_instruction():
-    result = apply_profile("Lag en annonse om tosekundersregelen.")
+    result = apply_profile("Create an ad about the two-second rule.")
     assert result.startswith(prompt_prefix("reht-visual"))
-    assert result.endswith("Oppgave: Lag en annonse om tosekundersregelen.")
+    assert result.endswith("Task: Create an ad about the two-second rule.")
 
 
 def test_empty_instruction_is_rejected():
