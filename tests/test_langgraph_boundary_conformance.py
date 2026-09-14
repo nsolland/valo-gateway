@@ -135,7 +135,7 @@ def test_langgraph_cannot_mutate_effect_after_exact_binding():
         update={"parameters": {"amount": 50_000, "purpose": "vendor_payment"}}
     )
 
-    with pytest.raises(ValueError, match="action digest"):
+    with pytest.raises(ValueError, match="action binding mismatch"):
         _execute(
             gateway=gateway,
             authority=authority,
