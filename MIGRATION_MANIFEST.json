@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "repository": "valo-gateway",
+  "canonical_control_plane": "src/valo_gateway",
+  "migration_sources": [],
+  "notes": "The public gateway surface is maintained as a standalone mechanical boundary."
+}

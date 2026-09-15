@@ -39,7 +39,7 @@ def apply_profile(instruction: str, profile_id: str = "reht-visual") -> str:
     instruction = instruction.strip()
     if not instruction:
         raise ValueError("instruction is required")
-    return f"{prompt_prefix(profile_id)}\n\nOppgave: {instruction}"
+    return f"{prompt_prefix(profile_id)}\n\nTask: {instruction}"
 
 
 def main() -> None:
