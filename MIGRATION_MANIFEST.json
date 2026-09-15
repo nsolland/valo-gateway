@@ -2,6 +2,12 @@
   "schema_version": 1,
   "repository": "valo-gateway",
   "canonical_control_plane": "src/valo_gateway",
-  "migration_sources": [],
+  "migration_sources": [
+    "valo-runtime-core",
+    "valo-runtime-local",
+    "valo-runtime-adapters",
+    "valo-tool-adapters",
+    "valo-platform"
+  ],
   "notes": "The public gateway surface is maintained as a standalone mechanical boundary."
 }
