@@ -51,6 +51,37 @@ Runtime, identity, protocol and tool integrations are adapters around the same e
 
 No adapter may create authority or retain an independent consequence-bearing effect path.
 
+## Context discipline
+
+Context is not state.
+
+Agent runtimes should provide the minimum context sufficient for correct execution of the current work unit. Narrative history, stale tool output and intermediate reasoning may be compressed or discarded when they no longer affect execution correctness.
+
+Authoritative state must not be compressed away. Authority bindings, constraints, commitments, provenance and execution evidence must remain exact canonical state or be losslessly reconstructable from original evidence.
+
+```text
+full execution trace
+      |
+      v
+classify operational significance
+      |
+      v
+preserve authoritative state exactly
+      |
+      v
+compress working context
+      |
+      v
+discard irrelevant intermediates
+      |
+      v
+retrieve original evidence on demand
+```
+
+Operational rule: compress narrative, never compress authority.
+
+Context discipline is therefore part of execution cost and carrier economics, alongside model choice, latency, routing and tool/runtime cost.
+
 ## Packages
 
 - `contracts`: public action, authority-reference, decision-binding, permit and receipt types
