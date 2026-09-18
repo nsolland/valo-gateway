@@ -202,13 +202,31 @@ class GatewayRuntime:
             if isinstance(run_id, str):
                 item['runId'] = run_id
             receipts.append(item)
+
+        replays = []
+        if 'receipt.replay' in self.operator_functions:
+            for receipt in receipts:
+                receipt_id = receipt.get('id')
+                if not isinstance(receipt_id, str) or not receipt_id:
+                    continue
+                replays.append({
+                    'id': 'replay:' + receipt_id,
+                    'status': 'READY',
+                    'sourceReceipt': receipt_id,
+                    'actions': [{
+                        'function': 'receipt.replay',
+                        'label': 'Replay',
+                        'target': receipt_id,
+                    }],
+                })
+
         return {
             'gateway': {'status': 'ONLINE', 'reht': 'fresh-at-consequence', 'version': '1'},
             'runs': [],
             'authorityGates': [],
             'exceptions': [],
             'receipts': receipts,
-            'replays': [],
+            'replays': replays,
             'settlements': [],
             'gcu': {'active': 0, 'queued': 0, 'consumed': 0, 'capacity': 0, 'unit': 'GCU'},
         }
