@@ -6,13 +6,16 @@ on:
       - "src/valo_gateway/runtime_http_service.py"
       - "src/valo_gateway/capability_frontdoor.py"
       - "tests/test_runtime_http_service.py"
+      - "tests/test_operator_provider.py"
       - ".github/workflows/runtime-http.yml"
   push:
     branches:
       - "feat/http-runtime-gateway"
+      - "feat/factory-provider"
     paths:
       - "src/valo_gateway/runtime_http_service.py"
       - "tests/test_runtime_http_service.py"
+      - "tests/test_operator_provider.py"
       - ".github/workflows/runtime-http.yml"
 
 jobs:
@@ -24,4 +27,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -e . pytest
-      - run: python -m pytest tests/test_runtime_http_service.py tests/test_capability_frontdoor.py -q
+      - run: python -m pytest tests/test_runtime_http_service.py tests/test_operator_provider.py tests/test_capability_frontdoor.py -q
