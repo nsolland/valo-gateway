@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -48,6 +49,7 @@ class GatewayRuntime:
         self.catalog = CapabilityCatalog(descriptors)
         self.receipt_path = Path(config.receipt_path)
         self.receipt_path.parent.mkdir(parents=True, exist_ok=True)
+        self._receipt_lock = threading.Lock()
 
     def discover(self, request: dict[str, Any]) -> dict[str, Any]:
         intent = request.get('intent')
@@ -116,20 +118,55 @@ class GatewayRuntime:
         record = request.get('record')
         if not isinstance(record, dict):
             raise ValueError('record is required')
-        previous_hash = self._last_hash()
-        envelope = {
-            'previous_hash': previous_hash,
-            'record': record,
-            'observed_at': datetime.now(timezone.utc).isoformat(),
-        }
-        canonical = json.dumps(envelope, sort_keys=True, separators=(',', ':'), default=str).encode('utf-8')
-        digest = 'sha256:' + hashlib.sha256(canonical).hexdigest()
-        line = json.dumps({'hash': digest, **envelope}, sort_keys=True, separators=(',', ':'), default=str)
-        with self.receipt_path.open('a', encoding='utf-8') as fh:
-            fh.write(line + '\n')
-            fh.flush()
-            os.fsync(fh.fileno())
+        with self._receipt_lock:
+            previous_hash = self._last_hash()
+            envelope = {
+                'previous_hash': previous_hash,
+                'record': record,
+                'observed_at': datetime.now(timezone.utc).isoformat(),
+            }
+            canonical = json.dumps(envelope, sort_keys=True, separators=(',', ':'), default=str).encode('utf-8')
+            digest = 'sha256:' + hashlib.sha256(canonical).hexdigest()
+            line = json.dumps({'hash': digest, **envelope}, sort_keys=True, separators=(',', ':'), default=str)
+            with self.receipt_path.open('a', encoding='utf-8') as fh:
+                fh.write(line + '\n')
+                fh.flush()
+                os.fsync(fh.fileno())
         return {'receipt_ref': digest}
+
+    def replay_receipt(self, request: dict[str, Any]) -> dict[str, Any]:
+        receipt_ref = request.get('receipt_ref')
+        if not isinstance(receipt_ref, str) or not receipt_ref:
+            raise ValueError('receipt_ref is required')
+        previous: str | None = None
+        if not self.receipt_path.exists():
+            return {'receipt_ref': receipt_ref, 'verified': False, 'found': False}
+        with self._receipt_lock:
+            with self.receipt_path.open('r', encoding='utf-8') as fh:
+                for raw in fh:
+                    if not raw.strip():
+                        continue
+                    entry = json.loads(raw)
+                    envelope = {
+                        'previous_hash': entry.get('previous_hash'),
+                        'record': entry.get('record'),
+                        'observed_at': entry.get('observed_at'),
+                    }
+                    canonical = json.dumps(envelope, sort_keys=True, separators=(',', ':'), default=str).encode('utf-8')
+                    computed = 'sha256:' + hashlib.sha256(canonical).hexdigest()
+                    valid = entry.get('hash') == computed and entry.get('previous_hash') == previous
+                    if not valid:
+                        return {'receipt_ref': receipt_ref, 'verified': False, 'found': entry.get('hash') == receipt_ref}
+                    previous = str(entry.get('hash'))
+                    if entry.get('hash') == receipt_ref:
+                        return {
+                            'receipt_ref': receipt_ref,
+                            'verified': True,
+                            'found': True,
+                            'record': entry.get('record'),
+                            'observed_at': entry.get('observed_at'),
+                        }
+        return {'receipt_ref': receipt_ref, 'verified': False, 'found': False}
 
     def _last_hash(self) -> str | None:
         if not self.receipt_path.exists() or self.receipt_path.stat().st_size == 0:
@@ -164,10 +201,12 @@ def dispatch(method: str, path: str, body: dict[str, Any], runtime: GatewayRunti
         if method == 'POST' and path == '/discover':
             return 200, runtime.discover(body)
         if method == 'POST' and path == '/evaluate':
-            result = runtime.evaluate(body)
-            return 200, result
+            return 200, runtime.evaluate(body)
         if method == 'POST' and path == '/receipts':
             return 201, runtime.receipt(body)
+        if method == 'POST' and path == '/receipts/replay':
+            result = runtime.replay_receipt(body)
+            return (200 if result.get('found') else 404), result
     except ValueError as exc:
         return 400, {'error': 'invalid_request', 'message': str(exc)}
     except Exception as exc:
