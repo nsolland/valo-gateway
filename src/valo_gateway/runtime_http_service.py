@@ -28,13 +28,42 @@ class RuntimeConfig:
         capabilities = json.loads(os.getenv('GATEWAY_CAPABILITIES_JSON', '[]'))
         grants = json.loads(os.getenv('GATEWAY_GRANTS_JSON', '[]'))
         operator_functions = json.loads(os.getenv('GATEWAY_OPERATOR_FUNCTIONS_JSON', '[]'))
+        operator_grants = json.loads(os.getenv('GATEWAY_OPERATOR_GRANTS_JSON', '[]'))
         if not isinstance(capabilities, list) or not isinstance(grants, list):
             raise ValueError('gateway capabilities and grants must be JSON arrays')
         if not isinstance(operator_functions, list):
             raise ValueError('GATEWAY_OPERATOR_FUNCTIONS_JSON must be a JSON array')
+        if not isinstance(operator_grants, list):
+            raise ValueError('GATEWAY_OPERATOR_GRANTS_JSON must be a JSON array')
+
+        composed_capabilities = list(capabilities)
+        known_capabilities = {
+            item.get('capability_id')
+            for item in composed_capabilities
+            if isinstance(item, dict)
+        }
+        for definition in operator_functions:
+            if not isinstance(definition, dict):
+                raise ValueError('operator function definitions must be objects')
+            function = definition.get('function')
+            capability_id = definition.get('capability_id', function)
+            if not isinstance(function, str) or not function.strip():
+                raise ValueError('operator function requires a non-empty function')
+            if not isinstance(capability_id, str) or not capability_id.strip():
+                raise ValueError('operator function capability_id must be a non-empty string')
+            if capability_id in known_capabilities:
+                continue
+            composed_capabilities.append({
+                'capability_id': capability_id,
+                'provider': 'operator',
+                'description': function.replace('.', ' '),
+                'risk': 'effect',
+            })
+            known_capabilities.add(capability_id)
+
         return cls(
-            capabilities=capabilities,
-            grants=grants,
+            capabilities=composed_capabilities,
+            grants=[*grants, *operator_grants],
             receipt_path=os.getenv('GATEWAY_RECEIPT_PATH', '/data/receipts.log'),
             operator_authorization=os.getenv('GATEWAY_OPERATOR_AUTHORIZATION', ''),
             operator_functions=operator_functions,
@@ -85,13 +114,22 @@ class GatewayRuntime:
 
     def evaluate(self, request: dict[str, Any]) -> dict[str, Any]:
         principal_id = request.get('principal_id')
+        principal_handle = request.get('principal_handle')
         capability_id = request.get('capability_id')
         account_ref = request.get('account_ref')
         if not isinstance(principal_id, str) or not isinstance(capability_id, str):
             raise ValueError('principal_id and capability_id are required')
         now = datetime.now(timezone.utc)
         for grant in self.config.grants:
-            if grant.get('principal_id') != principal_id:
+            grant_principal_id = grant.get('principal_id')
+            grant_principal_handle = grant.get('principal_handle')
+            if isinstance(grant_principal_id, str):
+                if grant_principal_id != principal_id:
+                    continue
+            elif isinstance(grant_principal_handle, str):
+                if grant_principal_handle != principal_handle:
+                    continue
+            else:
                 continue
             if grant.get('capability_id') != capability_id:
                 continue
