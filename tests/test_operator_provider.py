@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+import json
+
 from valo_gateway.runtime_http_service import GatewayRuntime, RuntimeConfig, dispatch
 
 
@@ -64,3 +67,43 @@ def test_registered_operator_function_is_evidenced_and_unknown_function_fails_cl
     )
     assert status == 400
     assert payload['error'] == 'invalid_request'
+
+
+def test_operator_env_adds_capability_and_grant_without_overwriting_base(monkeypatch, tmp_path):
+    valid_until = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    monkeypatch.setenv('GATEWAY_CAPABILITIES_JSON', json.dumps([{
+        'capability_id': 'workflow.create', 'provider': 'workflow', 'risk': 'effect',
+    }]))
+    monkeypatch.setenv('GATEWAY_GRANTS_JSON', json.dumps([{
+        'principal_id': 'p:njaal', 'capability_id': 'workflow.create', 'valid_until': valid_until,
+    }]))
+    monkeypatch.setenv('GATEWAY_OPERATOR_FUNCTIONS_JSON', json.dumps([{
+        'function': 'receipt.replay', 'kind': 'receipt_replay',
+    }]))
+    monkeypatch.setenv('GATEWAY_OPERATOR_GRANTS_JSON', json.dumps([{
+        'principal_handle': '@justyou', 'capability_id': 'receipt.replay', 'valid_until': valid_until,
+    }]))
+    monkeypatch.setenv('GATEWAY_RECEIPT_PATH', str(tmp_path / 'receipts.log'))
+
+    runtime = GatewayRuntime(RuntimeConfig.from_env())
+    discovered = runtime.discover({'intent': 'receipt replay'})
+    assert [item['capability_id'] for item in discovered['capabilities']] == ['receipt.replay']
+
+    assert runtime.evaluate({
+        'principal_handle': '@justyou',
+        'principal_id': 'some-authenticated-id',
+        'capability_id': 'receipt.replay',
+        'payload': {},
+    })['decision'] == 'ALLOW'
+    assert runtime.evaluate({
+        'principal_handle': '@other',
+        'principal_id': 'some-authenticated-id',
+        'capability_id': 'receipt.replay',
+        'payload': {},
+    })['decision'] == 'DENY'
+
+    assert runtime.evaluate({
+        'principal_id': 'p:njaal',
+        'capability_id': 'workflow.create',
+        'payload': {},
+    })['decision'] == 'ALLOW'
