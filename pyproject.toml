@@ -25,6 +25,7 @@ classifiers = [
 [project.scripts]
 valo-gateway = "valo_gateway.cli:main"
 valo-style-mcp = "valo_gateway.style_mcp:main"
+valo-capability-mcp = "valo_gateway.capability_mcp:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6"]
