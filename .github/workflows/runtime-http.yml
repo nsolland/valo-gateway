@@ -6,13 +6,16 @@ on:
       - "src/valo_gateway/runtime_http_service.py"
       - "src/valo_gateway/capability_frontdoor.py"
       - "tests/test_runtime_http_service.py"
+      - "tests/test_runtime_receipt_replay.py"
       - ".github/workflows/runtime-http.yml"
   push:
     branches:
       - "feat/http-runtime-gateway"
+      - "feat/receipt-replay-runtime"
     paths:
       - "src/valo_gateway/runtime_http_service.py"
       - "tests/test_runtime_http_service.py"
+      - "tests/test_runtime_receipt_replay.py"
       - ".github/workflows/runtime-http.yml"
 
 jobs:
@@ -24,4 +27,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -e . pytest
-      - run: python -m pytest tests/test_runtime_http_service.py tests/test_capability_frontdoor.py -q
+      - run: python -m pytest tests/test_runtime_http_service.py tests/test_runtime_receipt_replay.py tests/test_capability_frontdoor.py -q
