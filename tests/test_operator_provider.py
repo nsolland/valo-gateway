@@ -37,10 +37,19 @@ def test_operator_state_exposes_gateway_receipts(tmp_path):
     assert snapshot['runs'] == []
     assert snapshot['authorityGates'] == []
     assert snapshot['exceptions'] == []
-    assert snapshot['replays'] == []
     assert snapshot['settlements'] == []
     assert snapshot['receipts'][0]['id'] == created['receipt_ref']
     assert snapshot['receipts'][0]['function'] == 'run.pause'
+    assert snapshot['replays'][0] == {
+        'id': 'replay:' + created['receipt_ref'],
+        'status': 'READY',
+        'sourceReceipt': created['receipt_ref'],
+        'actions': [{
+            'function': 'receipt.replay',
+            'label': 'Replay',
+            'target': created['receipt_ref'],
+        }],
+    }
 
 
 def test_registered_operator_function_is_evidenced_and_unknown_function_fails_closed(tmp_path):
