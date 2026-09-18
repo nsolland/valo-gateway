@@ -25,13 +25,30 @@ def configure(frontdoor: CapabilityFrontDoor) -> None:
 @mcp.tool()
 def discover(intent: str, limit: int = 5) -> list[dict[str, Any]]:
     """Return only the capabilities relevant to the requested intent."""
-    return [asdict(item) for item in _frontdoor.discover(CapabilityRequest(intent, limit))]
+    return [
+        asdict(item)
+        for item in _frontdoor.discover(CapabilityRequest(intent, limit))
+    ]
 
 
 @mcp.tool()
-def invoke(capability_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-    """Invoke one bound capability. Effect capabilities fail closed without authority."""
-    return _frontdoor.invoke(capability_id, payload)
+def invoke(
+    capability_id: str,
+    payload: dict[str, Any],
+    principal_handle: str | None = None,
+) -> dict[str, Any]:
+    """Read immediately or stage an effect under an authenticated principal."""
+    return _frontdoor.invoke(
+        capability_id,
+        payload,
+        principal_handle=principal_handle,
+    )
+
+
+@mcp.tool()
+def commit(record_id: str) -> dict[str, Any]:
+    """Fresh-check authority, commit one staged effect, and return its receipt."""
+    return _frontdoor.commit(record_id)
 
 
 @mcp.tool()
@@ -41,7 +58,11 @@ def status(record_id: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def event(source: str, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+def event(
+    source: str,
+    event_type: str,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
     """Normalize and record an incoming provider event."""
     return _frontdoor.event(source, event_type, payload)
 
