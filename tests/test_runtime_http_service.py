@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 
 from valo_gateway.runtime_http_service import GatewayRuntime, RuntimeConfig
@@ -78,3 +79,51 @@ def test_receipts_are_append_only_hash_chained(tmp_path):
     assert len(lines) == 2
     assert first['receipt_ref'] in lines[0]
     assert second['receipt_ref'] in lines[1]
+
+
+def test_from_env_composes_extra_capability_and_grant(monkeypatch, tmp_path):
+    valid_until = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    monkeypatch.setenv('GATEWAY_CAPABILITIES_JSON', json.dumps([{
+        'capability_id': 'workflow.create',
+        'provider': 'workflow',
+        'description': 'create workflow automation',
+        'verbs': ['create'],
+        'nouns': ['workflow'],
+        'risk': 'effect',
+    }]))
+    monkeypatch.setenv('GATEWAY_GRANTS_JSON', json.dumps([{
+        'principal_id': 'p:njaal',
+        'capability_id': 'workflow.create',
+        'valid_until': valid_until,
+    }]))
+    monkeypatch.setenv('GATEWAY_EXTRA_CAPABILITIES_JSON', json.dumps([{
+        'capability_id': 'site.publish',
+        'provider': 'here.now',
+        'description': 'publish website files to a live URL',
+        'verbs': ['publish', 'deploy', 'host'],
+        'nouns': ['site', 'website', 'webpage'],
+        'risk': 'effect',
+    }]))
+    monkeypatch.setenv('GATEWAY_EXTRA_GRANTS_JSON', json.dumps([{
+        'principal_handle': '@justyou',
+        'capability_id': 'site.publish',
+        'valid_until': valid_until,
+    }]))
+    monkeypatch.setenv('GATEWAY_RECEIPT_PATH', str(tmp_path / 'receipts.log'))
+
+    cfg = RuntimeConfig.from_env()
+    assert {item['capability_id'] for item in cfg.capabilities} == {'workflow.create', 'site.publish'}
+    assert {item['capability_id'] for item in cfg.grants} == {'workflow.create', 'site.publish'}
+
+    runtime = GatewayRuntime(cfg)
+    discovered = runtime.discover({'intent': 'publish website', 'limit': 5})
+    assert [item['capability_id'] for item in discovered['capabilities']] == ['site.publish']
+
+    allowed = runtime.evaluate({
+        'principal_handle': '@justyou',
+        'principal_id': 'p:njaal',
+        'capability_id': 'site.publish',
+        'payload': {'files': [{'path': 'index.html'}]},
+    })
+    assert allowed['decision'] == 'ALLOW'
+    assert allowed['fresh'] is True
