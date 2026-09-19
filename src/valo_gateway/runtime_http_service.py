@@ -27,10 +27,16 @@ class RuntimeConfig:
     def from_env(cls) -> 'RuntimeConfig':
         capabilities = json.loads(os.getenv('GATEWAY_CAPABILITIES_JSON', '[]'))
         grants = json.loads(os.getenv('GATEWAY_GRANTS_JSON', '[]'))
+        extra_capabilities = json.loads(os.getenv('GATEWAY_EXTRA_CAPABILITIES_JSON', '[]'))
+        extra_grants = json.loads(os.getenv('GATEWAY_EXTRA_GRANTS_JSON', '[]'))
         operator_functions = json.loads(os.getenv('GATEWAY_OPERATOR_FUNCTIONS_JSON', '[]'))
         operator_grants = json.loads(os.getenv('GATEWAY_OPERATOR_GRANTS_JSON', '[]'))
         if not isinstance(capabilities, list) or not isinstance(grants, list):
             raise ValueError('gateway capabilities and grants must be JSON arrays')
+        if not isinstance(extra_capabilities, list):
+            raise ValueError('GATEWAY_EXTRA_CAPABILITIES_JSON must be a JSON array')
+        if not isinstance(extra_grants, list):
+            raise ValueError('GATEWAY_EXTRA_GRANTS_JSON must be a JSON array')
         if not isinstance(operator_functions, list):
             raise ValueError('GATEWAY_OPERATOR_FUNCTIONS_JSON must be a JSON array')
         if not isinstance(operator_grants, list):
@@ -42,6 +48,17 @@ class RuntimeConfig:
             for item in composed_capabilities
             if isinstance(item, dict)
         }
+        for definition in extra_capabilities:
+            if not isinstance(definition, dict):
+                raise ValueError('extra capability definitions must be objects')
+            capability_id = definition.get('capability_id')
+            if not isinstance(capability_id, str) or not capability_id.strip():
+                raise ValueError('extra capability requires a non-empty capability_id')
+            if capability_id in known_capabilities:
+                continue
+            composed_capabilities.append(dict(definition))
+            known_capabilities.add(capability_id)
+
         for definition in operator_functions:
             if not isinstance(definition, dict):
                 raise ValueError('operator function definitions must be objects')
@@ -61,9 +78,13 @@ class RuntimeConfig:
             })
             known_capabilities.add(capability_id)
 
+        for grant in extra_grants:
+            if not isinstance(grant, dict):
+                raise ValueError('extra grants must be objects')
+
         return cls(
             capabilities=composed_capabilities,
-            grants=[*grants, *operator_grants],
+            grants=[*grants, *extra_grants, *operator_grants],
             receipt_path=os.getenv('GATEWAY_RECEIPT_PATH', '/data/receipts.log'),
             operator_authorization=os.getenv('GATEWAY_OPERATOR_AUTHORIZATION', ''),
             operator_functions=operator_functions,
