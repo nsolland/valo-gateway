@@ -112,6 +112,8 @@ def test_from_env_composes_extra_capability_and_grant(monkeypatch, tmp_path):
     monkeypatch.setenv('GATEWAY_RECEIPT_PATH', str(tmp_path / 'receipts.log'))
 
     cfg = RuntimeConfig.from_env()
+    assert len(cfg.capabilities) == 2
+    assert len(cfg.grants) == 2
     assert {item['capability_id'] for item in cfg.capabilities} == {'workflow.create', 'site.publish'}
     assert {item['capability_id'] for item in cfg.grants} == {'workflow.create', 'site.publish'}
 
